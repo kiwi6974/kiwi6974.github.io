@@ -1,0 +1,367 @@
+<!doctype html>
+<!--KIWI-QJWEB:3-->
+<!--
+  3판 (2026-10-14) — 카톡·LINE 공용
+   · payload.plat = "kakao" | "line"  (봇이 넣는다 · 없으면 line 으로 본다)
+     kakao : 공질의 식별자는 파일명 = 풀닉("세리 92 여") 그대로 — 저장·삭제 op 의 nick 에 풀닉을 보낸다 (닉 정제·숫자 제거 안 함)
+     line  : 이전과 같이 코어닉(이모지·숫자 제거) 기준
+   · 회원의 st(in·away·out) 가 오면 (외출)·(퇴장) 표시 — 카톡 회원DB 대조용
+   · 비밀번호는 방마다 따로 (.공질관리 → 방 비밀번호 설정) · 안내문 갱신 (.공질관리웹)
+   · 봇은 자리표시자를 전부(/g) 치환한다 — 이 주석에는 자리표시자 이름을 적지 않는다
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>KIWI 공질 관리</title>
+<style>
+@font-face{font-family:'BMJUA';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/BMJUA.woff') format('woff');font-display:swap}
+:root{--page:#F3F4F7;--frame:#FAFAFC;--surface:#F3F4F8;--card:#FFFFFF;--ivory:#FFFCEB;--ivory-l:#F1EBC8;--ink:#282832;--ink2:#55555F;--sub:#94949E;--line:#E8E8EE;--line2:#F1F1F5;--kiwi:#91BD3B;--kiwi-d:#4DA369;--kiwi-l:#EFF6E1;--up:#EC5452;--up-l:#FDE4E4;--down:#4A8FD4;--pink:#E58FB0;--or:#B9741A;--or-l:#FFF1DB;--r:18px;--shadow:0 1px 2px rgba(24,24,34,.04),0 10px 30px rgba(24,24,34,.07);--disp:'BMJUA',sans-serif;--body:Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',system-ui,sans-serif}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--page);color:var(--ink);font:14px/1.5 var(--body);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;font-feature-settings:'tnum'}
+button,input,textarea{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer;padding:0}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--kiwi-d);outline-offset:2px}
+.hidden{display:none!important}
+/* ── 뼈대 ── */
+.app{max-width:1280px;margin:28px auto 40px;padding:18px;background:var(--frame);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow);display:grid;grid-template-columns:186px minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+body{padding:0 16px}
+.nav{position:sticky;top:28px;display:flex;flex-direction:column;gap:4px}
+.brand{font-family:var(--disp);font-size:21px;margin:2px 0 12px;letter-spacing:-.01em;line-height:1.25;word-break:keep-all}.brand small{display:block;font-family:var(--body);font-size:11px;font-weight:700;color:var(--kiwi-d);letter-spacing:.08em;margin-bottom:2px}
+.nav button{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:11px;font-weight:700;color:var(--ink2);text-align:left}
+.nav button.on{background:var(--kiwi-l);color:var(--kiwi-d)}
+.nav .meta{font-size:11.5px;color:var(--sub);margin-top:14px;line-height:1.6}
+.card{background:var(--card);border:1px solid var(--line2);border-radius:var(--r);box-shadow:0 1px 2px rgba(24,24,34,.04),0 6px 20px rgba(24,24,34,.05);overflow:hidden}
+.ch{display:flex;align-items:center;gap:8px;padding:13px 16px 10px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.ch h2{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}.ch .n{color:var(--sub);font-size:11.5px;margin-left:auto}
+.cb{padding:12px 16px 14px}
+.col-list{position:sticky;top:28px;max-height:calc(100vh - 56px);display:flex;flex-direction:column}
+.col-list .cb{overflow:auto;flex:1;min-height:0}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:0 10px;margin-bottom:8px}
+.search input{flex:1;min-width:0;border:0;background:none;padding:9px 2px;outline:none}
+.search input:focus-visible{outline:none}.search:focus-within{border-color:var(--kiwi)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;align-items:center}.chips .sp{flex:1}.chips .lb{font-size:11px;color:var(--sub);font-weight:700}
+.chip{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--surface);color:var(--ink2);border:1px solid var(--line)}
+.chip.on{background:var(--kiwi-l);color:var(--kiwi-d);border-color:var(--kiwi)}
+.chip.ck{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grp{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.06em;margin:12px 0 2px}
+.li{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:11px;width:100%;text-align:left;cursor:pointer;border:0;background:none}
+.li:hover{background:var(--surface)}.li.sel{background:var(--kiwi-l)}.li.ck{background:#EEF3FB}
+.li+.li{border-top:1px solid var(--line2)}.li.sel+.li,.li+.li.sel,.li.ck+.li,.li+.li.ck{border-top-color:transparent}
+.ckb{flex:none;width:30px;height:30px;margin:-6px -4px -6px -6px;display:grid;place-items:center;border-radius:9px}
+.ckb:hover{background:rgba(0,0,0,.05)}
+.ckb input{width:17px;height:17px;margin:0;accent-color:var(--ink);cursor:pointer}
+.av{flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:11.5px;font-weight:800;color:#fff;background:var(--down)}
+.av.f{background:var(--pink)}.av.x{background:var(--sub)}
+.li .tx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .tx b{font-size:13.5px}.li .tx span{color:var(--sub);font-weight:500;font-size:12px;margin-left:7px}
+.pill{flex:none;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--sub)}
+.pill.g{background:var(--kiwi-l);color:var(--kiwi-d)}.pill.k{background:var(--ink);color:#fff}.pill.o{background:var(--or-l);color:var(--or)}.pill.r{background:var(--up-l);color:var(--up)}.pill.b{background:#E6F0FB;color:var(--down)}
+.doc{font-size:13px;line-height:1.75;white-space:pre-wrap;word-break:break-word;background:var(--ivory);border:1px solid var(--ivory-l);border-radius:13px;padding:12px 14px;min-height:120px}
+.doc.warn{background:#FFF5F5;border-color:#F3C8C8}
+textarea.ta{width:100%;min-height:260px;resize:vertical;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 14px;line-height:1.7;outline:none}
+textarea.ta:focus{border-color:var(--kiwi)}
+.btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{font-size:13px;font-weight:700;padding:9px 15px;border-radius:11px;background:var(--surface);color:var(--ink2);border:1px solid var(--line)}
+.btn.p{background:var(--kiwi);color:#fff;border-color:var(--kiwi)}.btn.d{color:var(--up);border-color:#F3C8C8;background:#FFF5F5}.btn.r{margin-left:auto}
+.btn:disabled{opacity:.45;cursor:default}
+.hint{font-size:12px;color:var(--sub);margin:8px 0 0}
+.empty{color:var(--sub);font-size:13px;text-align:center;padding:40px 10px}
+.names{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:rgba(40,40,50,.92);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+/* 선택 삭제 막대 */
+.selbar{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);z-index:38;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;background:var(--ink);color:#fff;border-radius:14px;box-shadow:0 12px 36px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;white-space:nowrap}
+.selbar.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.selbar b{font-size:13.5px;margin-right:4px}
+.selbar .btn{padding:7px 12px;border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.1);color:#fff}
+.selbar .btn.d{background:var(--up);border-color:var(--up);color:#fff}
+.tabbar{display:none}
+.dim{position:fixed;inset:0;background:rgba(20,20,28,.45);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.center{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:20px}
+.center h1{font-family:var(--disp);font-weight:400;font-size:24px;margin:0}
+.center input{width:100%;max-width:340px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;text-align:center;font-size:16px}
+.center input:focus{border-color:var(--kiwi)}
+.spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(0,0,0,.12);border-top-color:var(--kiwi-d);animation:sp .7s linear infinite;vertical-align:-2px;margin-right:4px}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* ── 좁은 PC: 2열 (메뉴는 상단 탭) ── */
+@media (max-width:1100px){.app{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);padding:14px}.nav{position:static;grid-column:1/-1;flex-direction:row;align-items:center;flex-wrap:wrap}.nav .brand{margin:0 10px 0 0}.nav .meta{margin:0 0 0 auto;text-align:right}}
+/* ── 폰: 1열 + 하단 탭 + 본문 시트 ── */
+@media (max-width:720px){
+  body{padding:0}.app{grid-template-columns:1fr;margin:0 0 130px;padding:12px 14px;border:0;border-radius:0;box-shadow:none;background:var(--page);gap:10px}
+  .nav{display:block}.nav button,.nav .meta{display:none}.nav .brand{font-size:18px;margin:2px 0 4px}
+  .col-list{position:static;max-height:none}
+  .col-detail{position:fixed;left:0;right:0;bottom:0;z-index:45;border-radius:18px 18px 0 0;max-height:82vh;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .25s;box-shadow:0 -12px 40px rgba(0,0,0,.25)}
+  .col-detail.open{transform:translateY(0)}.col-detail .cb{overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+  .col-detail:before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 0}
+  .dim.on{opacity:1;pointer-events:auto}
+  .tabbar{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:35;background:var(--card);border-top:1px solid var(--line2);grid-template-columns:repeat(3,1fr);padding:6px 0 calc(8px + env(safe-area-inset-bottom,0px))}
+  .tabbar button{text-align:center;font-size:10.5px;font-weight:700;color:var(--sub);padding:2px 0;white-space:nowrap}.tabbar button.on{color:var(--kiwi-d)}.tabbar button b{display:block;font-size:19px;font-weight:400;line-height:1.2}
+  .toast{bottom:150px}
+  .selbar{bottom:calc(74px + env(safe-area-inset-bottom,0px));width:calc(100% - 24px);justify-content:center;padding:10px 12px}
+  .selbar b{font-size:13px}
+}
+</style>
+</head>
+<body data-kiwi-pub="1791982565" data-kiwi-exp="1791986165">
+<div id="root"></div>
+<div class="dim" id="dim"></div>
+<div class="selbar" id="selbar"><b id="sbn"></b><button class="btn" id="sbclear">선택 해제</button><button class="btn d" id="sbdel">🗑 선택 삭제</button></div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+"use strict";
+var SEALED = {"s": "XkBo/yQpD0NK4ZhYkBvVtw==", "i": "9mAA0d99EaiSwYg7", "c": "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"}, ITER = 250000, PUB = 1791982565, EXP = 1791986165, ROOM = "키위 테스트";
+var P = null, PW = "", TAB = "list", Q = "", FILTER = "all", SORT = "age", SEL = null, BULK = { text: "", pieces: [], sel: -1 }, DETAIL = null, EDIT = false, SAVED = {}, SAVING = false;
+var CHK = {};                       /* 다중 선택: nkey → 닉 */
+var root = document.getElementById("root"), dim = document.getElementById("dim");
+var THIS_YEAR = new Date().getFullYear();
+
+/* ── 유틸 ── */
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function nws(s){return String(s==null?"":s).replace(/[\s​‌‍﻿　]+/g," ").replace(/^ +| +$/g,"");}
+function nkey(s){var t=nws(s);try{t=t.normalize("NFKC");}catch(e){}return t.replace(/[^가-힣a-zA-Z0-9]/g,"").replace(/[0-9]/g,"").toLowerCase();}
+/* 3판 : 식별 키 — 카톡은 풀닉 그대로(소문자), LINE 은 코어닉 키 */
+function isK(){return !!(P&&P.plat==="kakao");}
+function idk(s){return isK()?nws(s).toLowerCase():nkey(s);}
+function dispNick(id){return isK()?(nws(id).split(" ")[0]||nws(id)):nws(id);}
+function b2a(bytes){var s="";for(var i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);return btoa(s);}
+function a2b(b64){var s=atob(b64),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u;}
+function utf8b64(s){return b2a(new TextEncoder().encode(s));}
+function toast(m,ms){var t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove("on");},ms||2200);}
+function fmtTime(sec){var d=new Date(sec*1000);return (d.getMonth()+1)+"."+d.getDate()+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
+function nChk(){var n=0;for(var k in CHK)if(CHK.hasOwnProperty(k))n++;return n;}
+
+/* ── 암호 (PBKDF2-SHA256 + AES-GCM, 봇과 같은 규격) ── */
+function key(pw,salt){return crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]).then(function(k){return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:ITER,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);});}
+function unseal(obj,pw){return key(pw,a2b(obj.s)).then(function(k){return crypto.subtle.decrypt({name:"AES-GCM",iv:a2b(obj.i)},k,a2b(obj.c));}).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));});}
+function seal(obj,pw){var salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));return key(pw,salt).then(function(k){return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},k,new TextEncoder().encode(JSON.stringify(obj)));}).then(function(ct){return {s:b2a(salt),i:b2a(iv),c:b2a(new Uint8Array(ct))};});}
+
+/* ── 양식 · 본문 해석 (봇 L01 과 같은 규칙) ── */
+var KINDS=[{k:"marry",re:/(혼인|결혼|미혼|기혼|돌싱|싱글|유부)/},{k:"nick",re:/(닉|이름|별명|nick|name)/i},{k:"age",re:/(나이|연령|년생|생년|age)/i},{k:"gender",re:/(성별|남녀|gender|sex)/i},{k:"region",re:/(사는곳|사는 곳|지역|거주|위치|동네|출몰|region)/},{k:"height",re:/(신장|체형|키|height)/i}];
+function stripDeco(s){return nws(String(s).replace(/^[^가-힣a-zA-Z0-9]+|[^가-힣a-zA-Z0-9\/·)]+$/g,""));}
+function kindOf(label){var s=nws(label);for(var i=0;i<KINDS.length;i++)if(KINDS[i].re.test(s))return KINDS[i].k;return "";}
+function lineLV(line){var m=/^([^:：]{1,40})[:：](.*)$/.exec(String(line).trim());if(!m)return null;var label=stripDeco(m[1]);return label?{label:label,value:nws(m[2])}:null;}
+function isMarryCombo(label){var p=nws(label).split(/\s*[\/·]\s*/);if(p.length<2)return false;for(var i=0;i<p.length;i++)if(!/^(기|돌|미|기혼|돌싱|미혼|싱글|유부)$/.test(p[i]))return false;return true;}
+function pairs(line){var lv=lineLV(line);if(!lv)return [];if(isMarryCombo(lv.label))return [{kind:"marry",label:lv.label,value:lv.value}];
+  var labs=lv.label.split(/\s*[\/·]\s*/);if(labs.length>1){var vals=lv.value.split("/"),got=[],any=false;for(var i=0;i<labs.length;i++){var k=kindOf(labs[i]);if(k)any=true;got.push({kind:k,label:nws(labs[i]),value:nws(vals[i]!==undefined?vals[i]:"")});}if(any)return got;}
+  return [{kind:kindOf(lv.label),label:lv.label,value:lv.value}];}
+function normGender(v){var s=nws(v).toLowerCase();if(!s)return "";if(/^(남|남자|남성|m|male)$/.test(s)||/(남자|남성)/.test(s)||/^남/.test(s))return "남";if(/^(여|여자|여성|f|female)$/.test(s)||/(여자|여성)/.test(s)||/^여/.test(s))return "여";return "";}
+function normMarry(v){var s=nws(v);if(/기혼|^기$|유부/.test(s))return "기혼";if(/돌싱|^돌$|이혼/.test(s))return "돌싱";if(/미혼|^미$|싱글/.test(s))return "미혼";return "";}
+function yy2year(n){var a=1900+n,b=2000+n;if(a>=1975&&a<=2005)return a;if(b>=1975&&b<=2005)return b;return 0;}
+function parseAge(v){var s=nws(v),m,n;if(!s)return {year:0,age:0};
+  m=s.match(/(\d{4}|\d{2})\s*년\s*생?/);if(m){if(m[1].length===4)return {year:+m[1]};n=+m[1];return {year:yy2year(n)||(n>=30?1900+n:2000+n)};}
+  m=s.match(/만?\s*(\d{1,3})\s*(살|세)/);if(m){n=+m[1];return (n>=1&&n<=120)?{year:THIS_YEAR-n+1,age:n}:{year:0};}
+  m=s.match(/(19\d{2}|20[0-2]\d)/);if(m)return {year:+m[1]};
+  m=s.match(/(?:^|\D)(\d{2})(?!\d)/);if(m){n=+m[1];var y=yy2year(n);if(y)return {year:y};if(n>=20&&n<=60)return {year:THIS_YEAR-n+1,age:n};}
+  return {year:0};}
+function cleanNick(s){var t=nws(s);try{t=t.normalize("NFKC");}catch(e){}return nws(t.replace(/[^\uAC00-\uD7A3\u3131-\u318E\uA960-\uA97C\uD7B0-\uD7FBa-zA-Z ]/g,""));}
+function parseDoc(content){var out={nick:"",year:0,gender:"",marry:"",region:"",labeled:0},lines=String(content||"").split(/\r?\n/);
+  for(var i=0;i<lines.length;i++){var ps=pairs(lines[i]);if(!ps.length)continue;out.labeled++;for(var j=0;j<ps.length;j++){var p=ps[j];if(!p.kind||!p.value)continue;
+    if(p.kind==="nick"&&!out.nick)out.nick=isK()?nws(p.value):(cleanNick(p.value)||p.value);else if(p.kind==="age"&&!out.year)out.year=parseAge(p.value).year;else if(p.kind==="gender"&&!out.gender)out.gender=normGender(p.value);else if(p.kind==="marry"&&!out.marry)out.marry=normMarry(p.value);else if(p.kind==="region"&&!out.region)out.region=p.value;}}
+  if(isK()&&out.nick){var ki=kinfo(out.nick);if(!out.year&&ki.year)out.year=ki.year;if(!out.gender&&ki.gender)out.gender=ki.gender;if(!out.marry&&ki.marry)out.marry=ki.marry;}
+  return out;}
+/* 카톡 풀닉 "세리 92 여 기" → {year, gender, marry} (파일명 규칙과 같다) */
+function kinfo(full){var t=nws(full).split(" "),o={year:0,gender:"",marry:""},i;for(i=1;i<t.length;i++){var x=t[i];if(!o.year&&/^\d{2}$/.test(x))o.year=yy2year(+x)||(+x>=30?1900+ +x:2000+ +x);else if(!o.gender&&/^(남|여|남자|여자)$/.test(x))o.gender=x.charAt(0);else if(!o.marry&&normMarry(x))o.marry=normMarry(x);}return o;}
+function shortRegion(r){var t=nws(r).replace(/[()\[\],]/g," ").split(" ").filter(Boolean);return t.length?t[t.length-1]:"";}
+function yy(year){return year?String(year).slice(-2):"";}
+function marryShort(m){return m?m.charAt(0):"";}
+function formLabels(){var out=[],lines=String(P.form||"").split(/\r?\n/);for(var i=0;i<lines.length;i++){var lv=lineLV(lines[i]);if(lv)out.push(lv.label);}return out;}
+function nickLabel(){var L=formLabels();for(var i=0;i<L.length;i++)if(kindOf(L[i])==="nick")return L[i];return L[0]||"닉네임";}
+function labelSim(a,b){var ka=nkey(a),kb=nkey(b);return !!(ka&&kb&&(ka===kb||ka.indexOf(kb)>=0||kb.indexOf(ka)>=0));}
+function splitForms(text){var nl=nickLabel(),lines=String(text).split(/\r?\n/),out=[],cur=[],hits=0;
+  for(var i=0;i<lines.length;i++){var lv=lineLV(lines[i]);if(lv&&labelSim(lv.label,nl)){hits++;if(cur.length&&hits>1){out.push(cur.join("\n"));cur=[];}}cur.push(lines[i]);}
+  if(cur.length)out.push(cur.join("\n"));return out.map(function(t){return t.replace(/^\s*\n+|\n+\s*$/g,"");}).filter(function(t){return nws(t);});}
+function fillForm(nick){return String(P.form||"").split(/\r?\n/).map(function(l){var lv=lineLV(l);if(lv&&labelSim(lv.label,nickLabel())&&!lv.value)return l.replace(/([:：])\s*$/,"$1 "+nick);return l;}).join("\n");}
+
+/* ── 자료 ── */
+/* id = 봇에 보내는 식별자 (카톡: 풀닉 = 파일명 · LINE: 코어닉),  nick = 화면에 보이는 이름 */
+function qjId(it){return isK()?(it.display||it.core):it.core;}
+function rows(){
+  var out=[],have={};
+  P.qj.forEach(function(it){var d=parseDoc(it.content),id=qjId(it),k=idk(id);
+    out.push({kind:"qj",key:it.key,id:id,nick:dispNick(id),year:d.year||(it.yy?yy2year(+it.yy)||+("19"+it.yy):0),gender:d.gender||it.gender,marry:d.marry||it.marry,region:shortRegion(d.region),content:it.content,updatedAt:it.updatedAt,by:it.by,st:it.st||"",saved:SAVED[k]||""});have[k]=1;});
+  P.members.forEach(function(m){var k=idk(m.nick);if(have[k])return;if(isK()&&m.st==="out")return;
+    out.push({kind:"member",key:m.key,id:m.nick,nick:dispNick(m.nick),year:+m.year||0,gender:m.gender,marry:m.marry,region:"",content:"",st:m.st||"",saved:SAVED[k]||""});});
+  return out;}
+function sortRows(a){a.sort(function(x,y){if(SORT==="name")return x.nick.localeCompare(y.nick,"ko")||x.id.localeCompare(y.id,"ko");return (x.year||9999)-(y.year||9999)||x.nick.localeCompare(y.nick,"ko");});return a;}
+function existsQj(nick){var k=idk(nick);return P.qj.some(function(x){return idk(qjId(x))===k;});}
+function applyLocal(ops){ops.forEach(function(o){var k=idk(o.nick);if(o.op==="del"){P.qj=P.qj.filter(function(x){return idk(qjId(x))!==k;});SAVED[k]="삭제됨";delete CHK[k];return;}
+  var d=parseDoc(o.content),it=P.qj.filter(function(x){return idk(qjId(x))===k;})[0];
+  if(it){it.content=o.content;it.gender=d.gender||it.gender;it.yy=yy(d.year)||it.yy;it.marry=d.marry||it.marry;it.updatedAt=Date.now();it.by="웹";SAVED[k]="수정됨";}
+  else{P.qj.push({key:k,display:o.nick,core:isK()?dispNick(o.nick):o.nick,yy:yy(d.year),gender:d.gender,marry:d.marry,content:o.content,updatedAt:Date.now(),by:"웹"});SAVED[k]="등록됨";}});}
+
+/* ── 화면 ── */
+var TABS=[["list","📋","조회·수정·삭제"],["bulk","📝","일괄등록"],["form","📄","양식"]];
+function tabsHtml(mobile){return TABS.map(function(t){return '<button data-tab="'+t[0]+'"'+(TAB===t[0]?' class="on"':'')+'>'+(mobile?'<b>'+t[1]+'</b>':t[1]+' ')+t[2]+'</button>';}).join("");}
+function render(){
+  var h='<nav class="nav"><div class="brand"><small>🥝 KIWI 공질</small>'+esc(P.room)+'</div>'+tabsHtml(false)+
+    '<div class="meta">공질 '+P.qj.length+' · 회원 '+P.members.length+'<br>'+fmtTime(P.pub)+' 기준<br>'+fmtTime(EXP)+' 까지 유효</div></nav>'+
+    '<section class="card col-list" id="list"></section><section class="card col-detail" id="detail"></section>'+
+    '<div class="tabbar">'+tabsHtml(true)+'</div>';
+  root.className="app";root.innerHTML=h;
+  Array.prototype.forEach.call(root.querySelectorAll("[data-tab]"),function(b){b.onclick=function(){TAB=b.getAttribute("data-tab");closeDetail();render();};});
+  var L=document.getElementById("list");
+  if(TAB==="list")renderList(L);else if(TAB==="bulk")renderBulk(L);else renderForm(L);
+  renderDetail();renderSelbar();
+}
+function rowHtml(r,extra){var sub=[yy(r.year),r.gender,r.marry?marryShort(r.marry):"",r.region].filter(Boolean).join(" · ");
+  var av=r.gender==="남"?'<span class="av">'+esc(r.nick.charAt(0))+'</span>':r.gender==="여"?'<span class="av f">'+esc(r.nick.charAt(0))+'</span>':'<span class="av x">'+esc(r.nick.charAt(0)||"?")+'</span>';
+  return av+'<span class="tx"><b>'+esc(r.nick)+'</b><span>'+esc(sub)+'</span></span>'+(extra||"");}
+function stPill(r){return r.st==="out"?'<span class="pill r">퇴장</span>':r.st==="away"?'<span class="pill o">외출</span>':'';}
+function savedPill(r){if(r.saved)return stPill(r)+'<span class="pill k">'+r.saved+'</span>';return stPill(r)+(r.kind==="member"?'<span class="pill">작성</span>':'');}
+function liHtml(r){var k=idk(r.id),ck=r.kind==="qj"?'<label class="ckb" data-ck="'+esc(r.id)+'"><input type="checkbox"'+(CHK[k]?' checked':'')+'></label>':'';
+  return '<div class="li'+(SEL===r.id?' sel':'')+(CHK[k]?' ck':'')+'" role="button" tabindex="0" data-n="'+esc(r.id)+'">'+ck+rowHtml(r,savedPill(r))+'</div>';}
+function renderList(L){
+  var all=rows(),ql=nws(Q).toLowerCase(),list=all.filter(function(r){
+    if(FILTER==="m"&&r.gender!=="남")return false;if(FILTER==="f"&&r.gender!=="여")return false;if(FILTER==="none"&&r.kind!=="member")return false;
+    if(ql&&r.nick.toLowerCase().indexOf(ql)<0&&r.id.toLowerCase().indexOf(ql)<0&&String(r.content).toLowerCase().indexOf(ql)<0&&r.region.toLowerCase().indexOf(ql)<0)return false;return true;});
+  var nM=all.filter(function(r){return r.gender==="남"&&r.kind==="qj";}).length,nF=all.filter(function(r){return r.gender==="여"&&r.kind==="qj";}).length,nN=all.filter(function(r){return r.kind==="member";}).length;
+  var visQj=list.filter(function(r){return r.kind==="qj";}),allOn=visQj.length>0&&visQj.every(function(r){return !!CHK[idk(r.id)];});
+  var h='<div class="ch"><h2>조회 · 수정 · 삭제</h2><span class="n">'+list.length+' / '+all.length+'</span></div><div class="cb"><div class="search">🔍 <input id="q" placeholder="닉 · 내용 · 지역 검색" value="'+esc(Q)+'"></div>'+
+    '<div class="chips"><button class="chip'+(FILTER==="all"?' on':'')+'" data-f="all">전체</button><button class="chip'+(FILTER==="m"?' on':'')+'" data-f="m">남 '+nM+'</button><button class="chip'+(FILTER==="f"?' on':'')+'" data-f="f">여 '+nF+'</button><button class="chip'+(FILTER==="none"?' on':'')+'" data-f="none">공질 없음 '+nN+'</button>'+
+    '<span class="sp"></span><span class="lb">정렬</span><button class="chip'+(SORT==="age"?' on':'')+'" data-s="age">나이순</button><button class="chip'+(SORT==="name"?' on':'')+'" data-s="name">가나다순</button></div>'+
+    '<div class="chips"><span class="lb">여러 명을 체크하면 한 번에 삭제할 수 있습니다</span><span class="sp"></span>'+(visQj.length?'<button class="chip'+(allOn?' ck':'')+'" id="ckall">'+(allOn?'☑ 전체 해제':'☐ 보이는 전체 선택')+' ('+visQj.length+')</button>':'')+'</div>';
+  if(!list.length)h+='<div class="empty">해당하는 회원이 없습니다</div>';
+  var groups=[["👨 남자","남"],["👧 여자","여"],["❔ 성별 미상",""]];
+  groups.forEach(function(g){var a=sortRows(list.filter(function(r){return r.kind==="qj"&&(r.gender||"")===g[1];}));if(!a.length)return;
+    h+='<div class="grp">'+g[0]+' ('+a.length+')</div>';a.forEach(function(r){h+=liHtml(r);});});
+  var miss=sortRows(list.filter(function(r){return r.kind==="member";}));
+  if(miss.length){h+='<div class="grp">📭 공질 없는 회원 ('+miss.length+')</div>';miss.forEach(function(r){h+=liHtml(r);});}
+  L.innerHTML=h+'</div>';
+  var qi=document.getElementById("q");qi.oninput=function(){Q=qi.value;var pos=qi.selectionStart;renderList(L);var n=document.getElementById("q");n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}};
+  Array.prototype.forEach.call(L.querySelectorAll("[data-f]"),function(b){b.onclick=function(){FILTER=b.getAttribute("data-f");renderList(L);};});
+  Array.prototype.forEach.call(L.querySelectorAll("[data-s]"),function(b){b.onclick=function(){SORT=b.getAttribute("data-s");try{localStorage.setItem("kiwi.qj.sort",SORT);}catch(e){}renderList(L);};});
+  var ca=document.getElementById("ckall");if(ca)ca.onclick=function(){if(allOn)visQj.forEach(function(r){delete CHK[idk(r.id)];});else visQj.forEach(function(r){CHK[idk(r.id)]=r.id;});renderList(L);renderSelbar();};
+  Array.prototype.forEach.call(L.querySelectorAll(".ckb"),function(lb){lb.onclick=function(e){e.stopPropagation();};
+    var inp=lb.querySelector("input"),n=lb.getAttribute("data-ck");inp.onchange=function(){var k=idk(n);if(inp.checked)CHK[k]=n;else delete CHK[k];lb.parentNode.classList.toggle("ck",inp.checked);
+      var c2=document.getElementById("ckall");if(c2){var on=visQj.every(function(r){return !!CHK[idk(r.id)];});c2.className="chip"+(on?" ck":"");c2.textContent=(on?"☑ 전체 해제":"☐ 보이는 전체 선택")+" ("+visQj.length+")";}
+      renderSelbar();};});
+  Array.prototype.forEach.call(L.querySelectorAll(".li"),function(b){var open=function(){var n=b.getAttribute("data-n");var r=rows().filter(function(x){return x.id===n;})[0];if(!r)return;SEL=n;EDIT=false;
+    DETAIL={mode:"view",nick:r.id,content:r.content||fillForm(r.id),exists:r.kind==="qj",row:r};
+    Array.prototype.forEach.call(L.querySelectorAll(".li"),function(x){x.classList.toggle("sel",x===b);});
+    openDetail();};b.onclick=open;b.onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();open();}};});
+}
+/* 선택 삭제 막대 */
+function renderSelbar(){var bar=document.getElementById("selbar"),n=nChk();
+  if(!P||TAB!=="list"||!n){bar.classList.remove("on");return;}
+  document.getElementById("sbn").textContent=n+"명 선택";bar.classList.add("on");}
+document.getElementById("sbclear").onclick=function(){CHK={};var L=document.getElementById("list");if(L&&TAB==="list")renderList(L);renderSelbar();};
+document.getElementById("sbdel").onclick=function(){var names=[];for(var k in CHK)if(CHK.hasOwnProperty(k))names.push(CHK[k]);if(!names.length)return;names.sort(function(a,b){return a.localeCompare(b,"ko");});
+  SEL=null;EDIT=false;DETAIL={mode:"multidel",names:names};openDetail();};
+
+function renderBulk(L){
+  var h='<div class="ch"><h2>일괄등록</h2><span class="n">여러 장을 이어 붙여도 됩니다</span></div><div class="cb">'+
+    '<textarea class="ta" id="bt" placeholder="양식을 채운 공질을 붙여 넣으세요.&#10;10명치를 이어 붙이면 '+esc(nickLabel())+' 줄마다 나눠서 아래에 보여 줍니다.">'+esc(BULK.text)+'</textarea>'+
+    '<div class="btns"><button class="btn" id="bclear">비우기</button><button class="btn p r" id="badd">전부 저장</button></div><div id="bl"></div></div>';
+  L.innerHTML=h;
+  var bt=document.getElementById("bt"),bl=document.getElementById("bl");
+  function rebuild(){BULK.text=bt.value;BULK.pieces=splitForms(bt.value).map(function(t){var d=parseDoc(t);return {nick:d.nick,year:d.year,gender:d.gender,marry:d.marry,region:shortRegion(d.region),content:t,ok:!!d.nick&&d.labeled>=2,exists:d.nick?existsQj(d.nick):false};});
+    if(BULK.sel>=BULK.pieces.length)BULK.sel=-1;drawPieces();}
+  function drawPieces(){var ps=BULK.pieces;if(!ps.length){bl.innerHTML='<div class="empty">붙여 넣으면 여기에 한 명씩 나뉘어 보입니다. 확인 후 [전부 저장]</div>';return;}
+    var ok=ps.filter(function(p){return p.ok;}).length,ov=ps.filter(function(p){return p.ok&&p.exists;}).length;
+    var s='<div class="grp">나뉜 공질 '+ps.length+'건 · 저장할 수 있는 건 '+ok+'건'+(ov?' · 덮어쓰기 '+ov+'건':'')+'</div>';
+    ps.forEach(function(p,i){var r={nick:p.nick||"(닉네임 없음)",year:p.year,gender:p.gender,marry:p.marry,region:p.region};
+      var pill=!p.ok?'<span class="pill r">제외</span>':p.exists?'<span class="pill o">덮어쓰기</span>':'<span class="pill g">신규</span>';
+      s+='<div class="li'+(BULK.sel===i?' sel':'')+'" role="button" data-i="'+i+'">'+rowHtml(r,pill)+'</div>';});
+    bl.innerHTML=s;Array.prototype.forEach.call(bl.querySelectorAll(".li"),function(b){b.onclick=function(){var i=+b.getAttribute("data-i"),p=BULK.pieces[i];BULK.sel=i;EDIT=false;DETAIL={mode:"piece",idx:i,nick:p.nick,content:p.content,exists:p.exists,ok:p.ok};drawPieces();openDetail();};});}
+  var tm;bt.oninput=function(){clearTimeout(tm);tm=setTimeout(rebuild,250);};
+  document.getElementById("bclear").onclick=function(){bt.value="";BULK={text:"",pieces:[],sel:-1};closeDetail();rebuild();};
+  document.getElementById("badd").onclick=function(){rebuild();var ops=[];BULK.pieces.forEach(function(p){if(p.ok)ops.push({op:"set",nick:p.nick,content:p.content});});
+    if(!ops.length){toast("저장할 수 있는 공질이 없습니다. "+nickLabel()+" 줄을 확인하세요");return;}
+    var skip=BULK.pieces.length-ops.length;
+    save(ops,document.getElementById("badd"),function(){bt.value="";BULK={text:"",pieces:[],sel:-1};closeDetail();TAB="list";render();toast(ops.length+"건 저장 · 봇이 곧 반영합니다"+(skip?" (닉 없는 "+skip+"건 제외)":""));});};
+  rebuild();
+}
+function renderForm(L){
+  L.innerHTML='<div class="ch"><h2>이 방의 양식</h2><span class="n">'+esc(P.room)+'</span></div><div class="cb"><div class="doc">'+esc(P.form||"(양식이 없습니다)")+'</div>'+
+    '<div class="btns"><button class="btn" id="fcopy">양식 복사</button></div>'+
+    '<p class="hint">· 성별/연령 칸은 <b>남 / 1983년생</b>, <b>여/90</b>, <b>남 / 35</b> 처럼 써도 됩니다. 두 자리 나이는 한국식 나이로 보고 년생으로 바꿔 저장합니다.<br>· 수정·삭제·등록은 버튼을 누르는 즉시 저장되고, 봇이 20초 안에 방에 반영한 뒤 결과를 올립니다.<br>· 삭제한 공질은 휴지통에 30일 보관됩니다 (.공질복구 로 되살릴 수 있음).<br>· 이 페이지는 '+fmtTime(EXP)+' 까지 열립니다. 지나면 방에서 .공질관리웹 으로 새 링크를 받으세요.<br>· 비밀번호는 방마다 따로 둡니다 (.공질관리 → 방 비밀번호 설정).</p></div>';
+  document.getElementById("fcopy").onclick=function(){navigator.clipboard.writeText(P.form||"").then(function(){toast("양식을 복사했습니다");},function(){toast("복사하지 못했습니다. 길게 눌러 복사하세요");});};
+}
+function renderDetail(){
+  var D=document.getElementById("detail");
+  if(!DETAIL){D.innerHTML='<div class="ch"><h2>본문</h2></div><div class="cb"><div class="empty">목록에서 닉을 누르면 여기에 공질이 보입니다</div></div>';return;}
+  var q=function(id){return document.getElementById(id);};
+  if(DETAIL.mode==="multidel"){var nm=DETAIL.names,show=nm.slice(0,30);
+    D.innerHTML='<div class="ch"><h2>선택 삭제</h2><span class="pill r">'+nm.length+'명</span></div><div class="cb"><div class="doc warn">아래 '+nm.length+'명의 공질을 삭제할까요?\n삭제한 공질은 휴지통에 30일 보관됩니다 (.공질복구 로 되살릴 수 있음).\n회원DB의 공질 표시도 함께 내려갑니다.</div>'+
+      '<div class="names">'+show.map(function(n){return '<span class="pill k">'+esc(n)+'</span>';}).join("")+(nm.length>show.length?'<span class="pill">외 '+(nm.length-show.length)+'명</span>':'')+'</div>'+
+      '<div class="btns"><button class="btn d" id="mdel">'+nm.length+'명 삭제 저장</button><button class="btn" id="cancel">취소</button></div></div>';
+    q("cancel").onclick=closeDetail;
+    q("mdel").onclick=function(){var ops=nm.map(function(n){return {op:"del",nick:n};});
+      save(ops,q("mdel"),function(){CHK={};closeDetail();render();toast(nm.length+"명 삭제 저장 · 봇이 곧 반영합니다",3200);});};
+    return;}
+  var d=parseDoc(DETAIL.content),info=[d.year?d.year+"년생":"",d.gender,d.marry,d.region].filter(Boolean).join(" · ");
+  var title=DETAIL.mode==="piece"?(DETAIL.nick||"닉네임 없음"):DETAIL.nick;
+  var h='<div class="ch"><h2>'+esc(title)+'</h2>'+(info?'<span class="pill g">'+esc(info)+'</span>':'')+(DETAIL.mode==="view"&&DETAIL.row&&DETAIL.row.updatedAt?'<span class="n">'+fmtTime(DETAIL.row.updatedAt/1000)+(DETAIL.row.by?' · '+esc(DETAIL.row.by):'')+'</span>':'')+'</div><div class="cb">';
+  if(DETAIL.confirmDel){h+='<div class="doc warn">'+esc(DETAIL.nick)+' 공질을 삭제할까요?\n삭제한 공질은 휴지통에 30일 보관됩니다 (.공질복구 로 되살릴 수 있음).</div><div class="btns"><button class="btn d" id="del2">삭제 저장</button><button class="btn" id="cancel">취소</button></div>';}
+  else if(EDIT){h+='<textarea class="ta" id="ed">'+esc(DETAIL.content)+'</textarea><div class="btns"><button class="btn p" id="ok">저장</button><button class="btn" id="cancel">취소</button></div><p class="hint" id="edinfo"></p>';}
+  else{h+='<div class="doc">'+esc(DETAIL.content)+'</div><div class="btns">';
+    if(DETAIL.mode==="piece"){h+=(DETAIL.ok?'<button class="btn p" id="ok">이 건만 저장</button>':'<span class="pill r">닉네임 줄이 없어 저장할 수 없습니다</span>')+'<button class="btn" id="edit">고치기</button>';}
+    else{h+='<button class="btn p" id="edit">'+(DETAIL.exists?"수정":"작성")+'</button><button class="btn" id="copy">복사</button>'+(DETAIL.exists?'<button class="btn d" id="del">삭제</button>':'');}
+    h+='<button class="btn r" id="close">닫기</button></div>';
+    if(DETAIL.mode==="view"&&!DETAIL.exists)h+='<p class="hint">아직 공질이 없는 회원입니다. 양식에 닉을 채워 두었으니 "작성"으로 이어서 적고 저장하세요.</p>';
+    if(DETAIL.mode==="view"&&DETAIL.row&&DETAIL.row.saved)h+='<p class="hint">방금 저장한 내용입니다. 봇이 반영하면 방에 결과가 올라옵니다.</p>';}
+  D.innerHTML=h+'</div>';
+  if(q("close"))q("close").onclick=closeDetail;
+  if(q("edit"))q("edit").onclick=function(){EDIT=true;renderDetail();};
+  if(q("cancel"))q("cancel").onclick=function(){EDIT=false;DETAIL.confirmDel=false;renderDetail();};
+  if(q("copy"))q("copy").onclick=function(){navigator.clipboard.writeText(DETAIL.content).then(function(){toast("복사했습니다");},function(){toast("복사하지 못했습니다");});};
+  if(q("del"))q("del").onclick=function(){DETAIL.confirmDel=true;renderDetail();};
+  if(q("del2"))q("del2").onclick=function(){var n=DETAIL.nick;save([{op:"del",nick:n}],q("del2"),function(){closeDetail();render();toast(n+" 삭제 저장 · 봇이 곧 반영합니다");});};
+  if(q("ed")){var ed=q("ed"),inf=q("edinfo");var upd=function(){var x=parseDoc(ed.value);inf.textContent="인식: "+[x.nick||"닉 없음",x.year?x.year+"년생":"년생 미상",x.gender||"성별 미상",x.marry,x.region].filter(Boolean).join(" · ");};ed.oninput=upd;upd();}
+  if(q("ok"))q("ok").onclick=function(){var v=EDIT?q("ed").value:DETAIL.content;var x=parseDoc(v);var nick=x.nick||DETAIL.nick;if(!nws(v)||!nick){toast("닉네임 줄이 있어야 저장할 수 있습니다");return;}
+    var idx=DETAIL.mode==="piece"?DETAIL.idx:-1;
+    save([{op:"set",nick:nick,content:v}],q("ok"),function(){if(idx>=0){BULK.pieces.splice(idx,1);BULK.text=BULK.pieces.map(function(p){return p.content;}).join("\n\n");BULK.sel=-1;}closeDetail();render();toast(nick+" 저장 · 봇이 곧 반영합니다");});};
+}
+function openDetail(){EDIT=false;renderDetail();var D=document.getElementById("detail");D.classList.add("open");dim.classList.add("on");}
+function closeDetail(){DETAIL=null;SEL=null;EDIT=false;var D=document.getElementById("detail");if(D){D.classList.remove("open");renderDetail();}dim.classList.remove("on");
+  var L=document.getElementById("list");if(L)Array.prototype.forEach.call(L.querySelectorAll(".li.sel"),function(x){x.classList.remove("sel");});}
+dim.onclick=closeDetail;
+
+/* ── 저장 ── */
+function gh(method,path,body){var g=P.gh;return fetch("https://api.github.com/repos/"+g.owner+"/"+g.repo+"/contents/"+path+(method==="GET"?"?ref="+g.branch+"&t="+Date.now():""),{method:method,headers:{"Authorization":"Bearer "+g.token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined,cache:"no-store"}).then(function(r){return r.json().then(function(j){return {status:r.status,body:j};});});}
+function save(ops,btn,done){
+  if(!ops||!ops.length||SAVING)return;
+  if(Date.now()/1000>EXP){toast("유효시간이 지났습니다. 방에서 새 링크를 받아주세요");return;}
+  SAVING=true;var label=btn?btn.textContent:"";if(btn){btn.disabled=true;btn.textContent="저장 중…";}
+  var box={at:Math.floor(Date.now()/1000),by:"방장",ops:ops.slice()},sha=null;
+  gh("GET",P.gh.inbox).then(function(r){if(r.status===200){sha=r.body.sha;return unseal(JSON.parse(new TextDecoder().decode(a2b(String(r.body.content||"").replace(/\n/g,"")))),PW).then(function(old){if(old&&old.ops)box.ops=old.ops.concat(ops);}).catch(function(){});}})
+  .then(function(){return seal(box,PW);}).then(function(sealed){var body={message:"qjweb inbox "+new Date().toISOString(),content:utf8b64(JSON.stringify(sealed)),branch:P.gh.branch};if(sha)body.sha=sha;return gh("PUT",P.gh.inbox,body);})
+  .then(function(r){if(r.status!==200&&r.status!==201)throw new Error("["+r.status+"] "+(r.body&&r.body.message||"저장 실패"));applyLocal(ops);SAVING=false;if(done)done();})
+  .catch(function(e){SAVING=false;toast("저장 실패: "+e.message);if(btn){btn.disabled=false;btn.textContent=label;}});
+}
+
+/* ── 시작 ── */
+function unlockScreen(msg){
+  root.className="";root.innerHTML='<div class="center"><h1>🥝 KIWI 공질 관리</h1><div class="hint" style="margin:0">'+esc(ROOM)+'</div><input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password"><button class="btn p" id="go" style="width:100%;max-width:340px">열기</button><div id="msg" class="hint" style="margin:0;'+(msg?'color:var(--up)':'')+'">'+esc(msg||"이 방의 공질관리 비밀번호를 입력하세요")+'</div></div>';
+  var pw=document.getElementById("pw"),go=document.getElementById("go");
+  function tryOpen(){var v=pw.value;if(!v)return;go.disabled=true;document.getElementById("msg").textContent="여는 중…";unseal(SEALED,v).then(function(p){P=p;PW=v;if(!P.plat)P.plat="line";P.qj=P.qj||[];P.members=P.members||[];try{var ss=localStorage.getItem("kiwi.qj.sort");if(ss==="name"||ss==="age")SORT=ss;}catch(e){}render();}).catch(function(){unlockScreen("비밀번호가 맞지 않습니다");});}
+  go.onclick=tryOpen;pw.onkeydown=function(e){if(e.key==="Enter")tryOpen();};pw.focus();
+}
+/* meta.json(수십 바이트)만 읽는다 — 새 판이 올라왔는지 가볍게 확인 */
+function readMeta(cb){fetch("meta.json?_="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(cb,function(){cb(null);});}
+function expiredScreen(){root.className="";root.innerHTML='<div class="center"><h1>만료된 페이지입니다</h1><p class="hint">방에서 .공질관리웹 (또는 .공질관리 → 웹에서 관리) 로 새 링크를 받아주세요.</p></div>';}
+/* 새 판(v)이 배포될 때까지 기다린다. meta.json 으로 먼저 확인하고,
+   실제 index.html 이 그 판인지 본 뒤에 넘어간다 (meta 만 먼저 반영되는 경우의 새로고침 반복 방지) */
+function waitScreen(v){
+  root.className="";root.innerHTML='<div class="center"><h1>새 페이지를 올리는 중입니다</h1><p class="hint" style="margin:0"><span class="spin"></span>잠시만 기다리면 자동으로 열립니다 <span id="c"></span></p><p class="hint">보통 30초~1분 걸립니다</p></div>';
+  var n=0,ready=false;
+  function fail(){root.innerHTML='<div class="center"><h1>아직 올라오지 않았습니다</h1><p class="hint">GitHub 배포가 평소보다 오래 걸리고 있습니다.</p><button class="btn p" id="rt">다시 시도</button></div>';document.getElementById("rt").onclick=function(){location.reload();};}
+  function go(){location.replace(location.pathname+"?v="+v+"&r="+Date.now());}
+  function checkIndex(){fetch(location.pathname+"?_="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";}).then(function(t){var m=/data-kiwi-pub="(\d+)"/.exec(t||"");if(m&&+m[1]>=v)go();else setTimeout(tick,4000);}).catch(function(){setTimeout(tick,4000);});}
+  (function tick(){n++;var c=document.getElementById("c");if(c)c.textContent="("+(n*4)+"초)";if(n>150){fail();return;}
+    if(ready){checkIndex();return;}
+    readMeta(function(m){if(m&&(m.pub||0)>=v){ready=true;checkIndex();}else setTimeout(tick,4000);});})();
+}
+var mv=/[?&]v=(\d+)/.exec(location.search),want=mv?+mv[1]:0,nowS=Date.now()/1000;
+if(!window.crypto||!crypto.subtle)root.innerHTML='<div class="center"><h1>이 브라우저에서는 열 수 없습니다</h1><p class="hint">Chrome · Safari 로 열어주세요</p></div>';
+else if(want>PUB)waitScreen(want);
+else if(nowS>EXP){expiredScreen();
+  /* 옛 링크로 들어왔어도 그 사이 새 판이 발행됐으면 그쪽으로 넘어간다 */
+  readMeta(function(m){if(m&&m.pub>PUB&&m.exp>nowS)waitScreen(m.pub);});}
+else unlockScreen("");
+})();
+</script>
+</body>
+</html>
