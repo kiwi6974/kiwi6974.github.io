@@ -1,0 +1,535 @@
+<!doctype html>
+<!--KIWI-QJMAP:11-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>KIWI 지역보기</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 공질 웹(qjweb.html)과 같은 톤. 봇(L30)이 자리표시자(PAYLOAD · PLAIN · ITER · PUB · EXP · ROOM)를 치환해 발행한다 */
+/* 레이아웃: PC 지도(좌)+명단(우) 2열, 폰 1열 탭 전환. 지도는 전국 → 권역 → 시도 → 북부/남부(잎) 로 파고들고, 잎 근처에서는 시군구 경계와 회원 위치 핀을 겹쳐 그린다 */
+:root{
+  --bg:#F3F4F7;--frame:#FAFAFC;--card:#FFFFFF;--surface:#EEF0F4;--ink:#272733;--ink2:#565665;--sub:#9294A0;--line:#E4E6EC;--line2:#F0F1F5;
+  --kiwi:#91BD3B;--kiwi-d:#4A9A62;--kiwi-l:#EDF5DF;
+  --sea:#CFE3F3;--sea-txt:#4E79A6;--border:#FFFFFF;--muni:#7A8699;--nk:#C9D1DC;--nk-txt:#5F6B7A;--pin:#E0453F;--pin-txt:#FFFFFF;
+  --m:#4A8FD4;--f:#E58FB0;--x:#A6A8B3;
+  /* 시도별 색 — 행정도 포스터 톤 */
+  --c-서울:#FBFBF4;--c-경기:#F7C9A2;--c-인천:#F6F6EE;--c-강원:#D7DFA2;--c-충북:#F3BBCB;--c-충남:#95C5E7;--c-대전:#F7F7F0;--c-세종:#F0F0E6;
+  --c-전북:#EAD8B6;--c-전남:#B9DDA9;--c-광주광역시:#F7F7F0;--c-경북:#DCC9E6;--c-경남:#B9BEE8;--c-대구:#F7F7F0;--c-부산:#F7F7F0;--c-울산:#F7F7F0;--c-제주:#BFDCEC;
+  --disp:'Gowun Dodum',sans-serif;--body:'IBM Plex Sans KR',Pretendard,-apple-system,'Apple SD Gothic Neo',system-ui,sans-serif;
+  --r:16px;--shadow:0 1px 2px rgba(24,24,34,.04),0 8px 26px rgba(24,24,34,.07)
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15171C;--frame:#1B1E24;--card:#22252C;--surface:#2A2E36;--ink:#ECEDF1;--ink2:#C3C5CE;--sub:#80838E;--line:#333740;--line2:#2B2F37;
+  --kiwi:#9BC94A;--kiwi-d:#86B944;--kiwi-l:#2A3522;--sea:#17222E;--sea-txt:#6F94BF;--border:#0F141B;--muni:#9AA6B8;--nk:#2A3038;--nk-txt:#7C8796;--x:#5E616B;
+  --c-서울:#3A3D40;--c-경기:#7E5A3E;--c-인천:#383B3F;--c-강원:#5E6A3C;--c-충북:#76484F;--c-충남:#355878;--c-대전:#3A3D40;--c-세종:#3A3D40;
+  --c-전북:#6E5F43;--c-전남:#436543;--c-광주광역시:#3A3D40;--c-경북:#5E4C70;--c-경남:#464C76;--c-대구:#3A3D40;--c-부산:#3A3D40;--c-울산:#3A3D40;--c-제주:#3D566B;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15171C;--frame:#1B1E24;--card:#22252C;--surface:#2A2E36;--ink:#ECEDF1;--ink2:#C3C5CE;--sub:#80838E;--line:#333740;--line2:#2B2F37;
+  --kiwi:#9BC94A;--kiwi-d:#86B944;--kiwi-l:#2A3522;--sea:#17222E;--sea-txt:#6F94BF;--border:#0F141B;--muni:#9AA6B8;--nk:#2A3038;--nk-txt:#7C8796;--x:#5E616B;
+  --c-서울:#3A3D40;--c-경기:#7E5A3E;--c-인천:#383B3F;--c-강원:#5E6A3C;--c-충북:#76484F;--c-충남:#355878;--c-대전:#3A3D40;--c-세종:#3A3D40;
+  --c-전북:#6E5F43;--c-전남:#436543;--c-광주광역시:#3A3D40;--c-경북:#5E4C70;--c-경남:#464C76;--c-대구:#3A3D40;--c-부산:#3A3D40;--c-울산:#3A3D40;--c-제주:#3D566B;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);padding-inline:16px;padding-block:20px 40px;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+button:focus-visible{outline:2px solid var(--kiwi-d);outline-offset:2px}
+.app{max-width:1180px;margin:0 auto;background:var(--frame);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:16px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
+.head{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:2px 4px 4px}
+.brand{font-family:var(--disp);font-size:20px;line-height:1.2}
+.brand small{display:block;font-family:var(--body);font-size:11px;font-weight:700;color:var(--kiwi-d);letter-spacing:.08em}
+.tabs{display:flex;gap:4px;margin-left:auto;background:var(--surface);padding:4px;border-radius:12px}
+.tabs button{padding:6px 12px;border-radius:9px;font-weight:600;color:var(--ink2);font-size:12.5px}
+.tabs button.on{background:var(--card);color:var(--kiwi-d);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mock{font-size:11px;color:var(--sub);border:1px dashed var(--line);border-radius:999px;padding:2px 9px}
+.card{background:var(--card);border:1px solid var(--line2);border-radius:var(--r);overflow:hidden;min-width:0}
+.ch{display:flex;align-items:center;gap:8px;padding:12px 14px 10px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.ch h2{margin:0;font-size:14.5px;font-weight:700}
+.ch .n{margin-left:auto;color:var(--sub);font-size:11.5px}
+.crumb{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12.5px}
+.crumb button{padding:3px 8px;border-radius:8px;color:var(--ink2);font-weight:600}
+.crumb button:hover{background:var(--surface)}
+.crumb button.cur{background:var(--kiwi-l);color:var(--kiwi-d)}
+.crumb .sep{color:var(--sub)}
+/* 지도 */
+.mapwrap{position:relative;background:var(--sea);aspect-ratio:400/500;max-height:720px;width:100%;touch-action:none;overflow:hidden}
+.mapwrap svg{cursor:grab}.mapwrap.drag svg{cursor:grabbing}
+.mapwrap svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.reg{stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer;transition:opacity .25s}
+.reg:hover{filter:brightness(.94)}
+.reg.dim{opacity:.38}
+.reg.dim:hover{opacity:.6}
+.reg.leafsel{stroke:var(--ink);stroke-width:1.6}
+.muni{fill:transparent;stroke:var(--muni);stroke-opacity:.5;stroke-width:.7;vector-effect:non-scaling-stroke;cursor:pointer;transition:fill .15s}
+.muni:hover{fill:rgba(0,0,0,.07)}
+.muni.on{fill:var(--kiwi-d);fill-opacity:.32;stroke:var(--kiwi-d);stroke-opacity:1;stroke-width:1.4}
+.nk{fill:var(--nk);stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}
+.nkh{fill:url(#hatch);pointer-events:none}
+.other{fill:var(--nk);fill-opacity:.55;stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}
+.lbl{font-family:var(--body);font-weight:700;fill:var(--ink);pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:var(--border);stroke-opacity:.9;stroke-linejoin:round}
+.lbl .cnt{font-weight:600;fill:var(--ink2)}
+.sea-l{font-family:var(--disp);fill:var(--sea-txt);text-anchor:middle;pointer-events:none;opacity:.9}
+.sea-l .en{font-family:var(--body);font-style:italic;font-weight:500;opacity:.8}
+.nk-l{font-family:var(--body);fill:var(--nk-txt);text-anchor:middle;pointer-events:none;font-weight:600;letter-spacing:.06em}
+.isl{fill:var(--c-경북);stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke}
+.isl-l{font-family:var(--body);fill:var(--ink2);font-weight:600;pointer-events:none;text-anchor:middle}
+.pin{cursor:pointer}
+.pin circle{fill:var(--pin);stroke:var(--border);stroke-width:1.2;vector-effect:non-scaling-stroke}
+.pin.on circle{fill:var(--kiwi-d)}
+.pin text{font-family:var(--body);font-weight:700;fill:var(--pin-txt);text-anchor:middle;pointer-events:none}
+.pin .nm{fill:var(--ink);text-anchor:start;font-weight:600;paint-order:stroke;stroke:var(--border);stroke-opacity:.9;stroke-linejoin:round}
+.back{position:absolute;left:10px;top:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px}
+.zoom button{width:30px;height:30px;background:var(--card);border:1px solid var(--line);border-radius:9px;font-size:16px;font-weight:700;color:var(--ink2);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.legend{position:absolute;right:10px;bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:11px;color:var(--ink2);display:flex;flex-direction:column;gap:3px;max-width:46%}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1px solid var(--line)}
+.hint{font-size:12px;color:var(--sub);padding:9px 14px;border-top:1px solid var(--line2)}
+/* 명단 */
+.list{display:flex;flex-direction:column;max-height:760px}
+.list .body{overflow:auto;padding:0 12px 14px;min-height:0}
+.stat{display:flex;gap:8px;padding:10px 14px 0;flex-wrap:wrap}
+.chip{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--surface);color:var(--ink2);border:1px solid var(--line)}
+.chip.on{background:#FFF1DB;color:#B9741A;border-color:#E8C98F}
+.pill.o{background:#FFF1DB;color:#B9741A}.pill.r{background:#FDE4E4;color:#C94441}
+.chip b{font-weight:800}
+.stat .k{flex:1 1 90px;background:var(--surface);border-radius:11px;padding:8px 11px;min-width:0}
+.stat .k b{display:block;font-size:19px;font-family:var(--disp);line-height:1.1}
+.stat .k span{font-size:11px;color:var(--sub)}
+.sortrow{flex:1 1 100%;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sortrow label{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;margin-left:auto}
+.sortrow label input{accent-color:var(--kiwi-d);width:15px;height:15px;margin:0}
+/* 표 형태 명단: 닉네임 · 연령 · 성별 · 혼인 · 지역 */
+.thead,.tr{display:grid;grid-template-columns:minmax(0,1.3fr) 46px 40px 40px minmax(0,1.6fr);gap:6px;align-items:center;padding:7px 8px}
+.thead{position:sticky;top:0;z-index:3;background:var(--card);font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.04em;border-bottom:1px solid var(--line);margin:0 0 2px;padding-top:10px;white-space:nowrap;box-shadow:0 -12px 0 0 var(--card)}
+.thead button{text-align:left;font-weight:700;color:var(--sub);padding:2px 0}
+.thead button.on{color:var(--kiwi-d)}
+.tr{border-top:1px solid var(--line2);font-size:13px}
+.tr .nk{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr .c{color:var(--ink2);font-variant-numeric:tabular-nums}
+.tr .g.m{color:var(--m)}.tr .g.f{color:var(--f)}
+.tr .rg{display:flex;flex-wrap:wrap;gap:3px;align-items:center;min-width:0}
+.tr .rg .raw{font-size:11px;color:var(--sub);margin-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.hp{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--surface);color:var(--ink2);border:1px solid var(--line);white-space:nowrap}
+.hp.last{background:var(--kiwi-l);color:var(--kiwi-d);border-color:var(--kiwi)}
+.hp.muni{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.stp{font-size:10px;font-weight:700;padding:0 5px;border-radius:999px;margin-left:4px;vertical-align:1px}
+.stp.away{background:#FFF1DB;color:#B9741A}.stp.out{background:#FDE4E4;color:#C94441}
+/* 지역 묶음 헤더: 시도 색으로 음영, 스크롤 시 인덱스처럼 위에 붙는다 */
+.gh{position:sticky;top:37px;z-index:2;display:flex;align-items:center;gap:8px;margin:8px 0 0;padding:7px 10px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--gh,var(--surface));border-left:4px solid var(--gc,var(--kiwi))}
+.gh b{font-weight:800;color:var(--ink2)}
+.gh button{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--kiwi-d)}
+.tr.in-g{background:color-mix(in srgb,var(--gc,transparent) 7%,transparent)}
+@media (max-width:820px){ .thead,.tr{grid-template-columns:minmax(0,1.2fr) 36px 28px 28px minmax(0,1.5fr);gap:4px;padding:7px 4px} .tr .rg .raw{display:none} .thead{top:0} .gh{top:37px} }.sortrow .lb{font-size:11px;color:var(--sub);font-weight:700;margin-right:2px}
+.sortrow .chip.on{background:var(--kiwi-l);color:var(--kiwi-d);border-color:var(--kiwi)}
+.filt{margin:10px 2px 0;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);background:var(--kiwi-l);border-radius:9px;padding:6px 10px}
+.filt button{margin-left:auto;color:var(--kiwi-d);font-weight:600}
+.grp{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--sub);font-weight:700;letter-spacing:.04em;margin:12px 2px 4px}
+.grp button{color:var(--kiwi-d);font-weight:600;letter-spacing:0;margin-left:auto;font-size:11.5px}
+.li{display:flex;align-items:center;gap:10px;padding:8px 8px;border-radius:10px;width:100%;text-align:left}
+.center{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:20px}
+.center h1{font-family:var(--disp);font-weight:400;font-size:24px;margin:0}
+.center input{width:100%;max-width:340px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;text-align:center;font-size:16px}
+.center .btn{font-size:13px;font-weight:700;padding:9px 15px;border-radius:11px;background:var(--kiwi);color:#fff;width:100%;max-width:340px}
+.spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(0,0,0,.12);border-top-color:var(--kiwi-d);animation:sp .7s linear infinite;vertical-align:-2px;margin-right:4px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hintp{font-size:12px;color:var(--sub);margin:0}
+.li+.li{border-top:1px solid var(--line2)}
+.av{flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;background:var(--m)}
+.av.f{background:var(--f)}.av.x{background:var(--x)}
+.tx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx b{font-size:13.5px;font-weight:600}
+.tx span{color:var(--sub);font-size:12px;margin-left:7px}
+.pill{flex:none;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--sub)}
+.pill.g{background:var(--kiwi-l);color:var(--kiwi-d)}
+.empty{color:var(--sub);text-align:center;padding:40px 10px;font-size:13px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:9px 14px;border-radius:11px;font-size:12.5px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+.tabs{display:none}
+.tolist{display:none;position:absolute;left:50%;bottom:10px;transform:translateX(-50%);align-items:center;gap:6px;background:var(--ink);color:var(--card);border-radius:999px;padding:7px 13px;font-size:12px;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.22);white-space:nowrap}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;padding:12px;border-radius:18px;gap:10px}
+  .mapwrap{aspect-ratio:auto;height:58vh;min-height:360px}
+  .list{max-height:none}
+  .list .body{overflow:visible}
+  .tabs{display:none}
+  .legend{max-width:60%;bottom:48px}
+  .tolist{display:flex}
+}
+
+@media (prefers-reduced-motion:reduce){.reg{transition:none}}
+</style>
+</head>
+<body data-kiwi-pub="1791724093" data-kiwi-exp="1791810493">
+<script>window.onerror=function(m,s,l){ try{ var d=document.getElementById("err")||document.createElement("div"); d.id="err"; d.style.cssText="position:fixed;left:12px;right:12px;bottom:12px;z-index:99;background:#B9741A;color:#fff;padding:10px 14px;border-radius:10px;font:12px/1.5 sans-serif;word-break:break-all"; d.textContent="페이지 오류: "+m+" ("+l+"행) — 이 문구를 봇 관리자에게 알려주세요"; document.body.appendChild(d);}catch(e){} };</script>
+<div id="root"><div class="app view-map" id="app" hidden>
+  <div class="head">
+    <div class="brand"><small>🥝 KIWI 지역보기</small><span id="roomname"></span></div>
+    <span class="mock" id="pubinfo"></span>
+    <div class="tabs"><button id="tmap" class="on">🗺 지도</button><button id="tlist">📋 명단</button></div>
+  </div>
+
+  <section class="card mapcard">
+    <div class="ch"><div class="crumb" id="crumb"></div><span class="n" id="mapn"></span></div>
+    <div class="mapwrap" id="mapwrap">
+      <svg id="map" viewBox="0 0 400 500" role="img" aria-label="대한민국 행정 구역 지도"></svg>
+      <button class="back" id="back" hidden>← 상위 지역으로 이동</button>
+      <div class="zoom"><button id="zin" title="확대">+</button><button id="zout" title="축소">−</button><button id="zfit" title="지역에 맞춤" style="font-size:12px">⌖</button></div>
+      <div class="legend" id="legend"></div>
+      <button class="tolist" id="tolist">📋 명단 보기 ↓</button>
+    </div>
+    <div class="hint" id="hint"></div>
+  </section>
+
+  <section class="card list">
+    <div class="ch"><h2 id="ltitle">전국</h2><button class="chip" id="noloc" title="지역 칸이 비었거나 알 수 없는 회원">📭 지역 미등록 <b id="nolocn">0</b></button><button class="chip" id="incout" title="방을 나간 사람의 공질도 함께 보기" hidden>🚪 퇴장자 포함 <b id="incoutn">0</b></button><span class="n" id="ln"></span></div>
+    <div class="stat" id="stat"></div>
+    <div class="body" id="lbody"></div>
+  </section>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+/* ───────── 지리 자료 (통계청 2013 시군구 경계 · southkorea-maps 단순화본, 북한 윤곽은 world.geo.json) ───────── */
+var PAYLOAD = "eyJ2IjoyLCJyb29tIjoi652867O17IicIiwicHViIjoxNzkxNzI0MDkzLCJtZW1iZXJzIjpbeyJuaWNrIjoi6rCA7J2EIiwieWVhciI6MTk4MywiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLsiJjsm5AiLCJzdCI6Im91dCJ9LHsibmljayI6IuqwgO2drCIsInllYXIiOjE5ODcsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4Iiwic3QiOiJpbiJ9LHsibmljayI6Iuqwle2YhCIsInllYXIiOjE5OTAsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi66+47IKsIiwic3QiOiJpbiJ9LHsibmljayI6IuqyqOyauCIsInllYXIiOjE5ODcsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4Iiwic3QiOiJvdXQifSx7Im5pY2siOiLqtIDsi50iLCJ5ZWFyIjoxOTg5LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyyoOyCsOyXrSA367KI7Lac6rWsIiwic3QiOiJpbiJ9LHsibmljayI6Iuq2geuvvCIsInllYXIiOjE5ODcsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISg66aJIiwic3QiOiJpbiJ9LHsibmljayI6IuuCmOuCmCIsInllYXIiOjE5ODQsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi64KY64KY64KY66iV7KO8Iiwic3QiOiJpbiJ9LHsibmljayI6IuuCmO2drCIsInllYXIiOjE5OTQsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4Iiwic3QiOiJpbiJ9LHsibmljayI6IuuLpOuLpCIsInllYXIiOjE5ODgsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi64uk64ukIOqyveq4sCIsInN0IjoiaW4ifSx7Im5pY2siOiLri6TtnawiLCJ5ZWFyIjoxOTg2LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuydmOygleu2gCIsInN0IjoiaW4ifSx7Im5pY2siOiLrjZXshKAiLCJ5ZWFyIjoxOTg1LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyGoe2MjOq1rCIsInN0IjoiaW4ifSx7Im5pY2siOiLrj4TrpqwiLCJ5ZWFyIjoxOTk1LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCIsInN0Ijoib3V0In0seyJuaWNrIjoi64+E7JiBIiwieWVhciI6MTk4OSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsmqnsnbgiLCJzdCI6Im91dCJ9LHsibmljayI6IuuPhO2eiCIsInllYXIiOjE5OTAsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J247LKcIiwic3QiOiJvdXQifSx7Im5pY2siOiLrj5nqtawiLCJ5ZWFyIjoxOTg4LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuqwleuPmSIsInN0IjoiaW4ifSx7Im5pY2siOiLrj5nrsLEiLCJ5ZWFyIjoxOTkxLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyduOyynCIsInN0Ijoib3V0In0seyJuaWNrIjoi65GQ65GQIiwieWVhciI6MTk4MiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLshJzsmrgiLCJzdCI6ImluIn0seyJuaWNrIjoi65GQ66asIiwieWVhciI6MTk4MiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLqsJXrgqggJiDqs6DslpEiLCJzdCI6ImluIn0seyJuaWNrIjoi65GQ67aAIiwieWVhciI6MTk4NywiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnbjsspwiLCJzdCI6Im91dCJ9LHsibmljayI6IuuRkOy5mCIsInllYXIiOjE5ODgsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7Jqp7IKwIiwic3QiOiJpbiJ9LHsibmljayI6IuudvOydtCIsInllYXIiOjE5ODYsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi6rmA7Y+sIiwic3QiOiJvdXQifSx7Im5pY2siOiLroIjrqqwiLCJ5ZWFyIjoxOTk4LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyduOyynCIsInN0IjoiaW4ifSx7Im5pY2siOiLroZzrr7giLCJ5ZWFyIjoxOTg2LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iuq0keuqhSIsInN0IjoiaW4ifSx7Im5pY2siOiLrpqzrgpgiLCJ5ZWFyIjoxOTg0LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyViOyWkSIsInN0Ijoib3V0In0seyJuaWNrIjoi66as7KaIIiwieWVhciI6MTk4NSwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLri6TsgrAiLCJzdCI6ImluIn0seyJuaWNrIjoi66a066asIiwieWVhciI6MTk5MCwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnbzrpqwg7J247LKcIiwic3QiOiJvdXQifSx7Im5pY2siOiLrrLTruYgiLCJ5ZWFyIjoxOTg3LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuqwleuCqCIsInN0IjoiaW4ifSx7Im5pY2siOiLrr7jriIQiLCJ5ZWFyIjoxOTg0LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauC7qsJXshJwiLCJzdCI6ImluIn0seyJuaWNrIjoi66+86rWtIiwieWVhciI6MTk4OSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLqsJXshJwiLCJzdCI6ImluIn0seyJuaWNrIjoi66+87J6sIiwieWVhciI6MTk4MiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnYDtj4kiLCJzdCI6ImluIn0seyJuaWNrIjoi66+87Zi4IiwieWVhciI6MTk4MywiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLrr7ztmLggODMg65iQ65Ox7Y+sIOy2nOuwnCIsInN0Ijoib3V0In0seyJuaWNrIjoi67Ck7J20IiwieWVhciI6MTk4MywiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsiJjsm5AiLCJzdCI6Im91dCJ9LHsibmljayI6Iuuwse2YuCIsInllYXIiOjE5OTEsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J247LKcIiwic3QiOiJpbiJ9LHsibmljayI6IuuztOuvuCIsInllYXIiOjE5ODMsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J247LKcIiwic3QiOiJpbiJ9LHsibmljayI6IuuzteuCqCIsInllYXIiOjE5ODIsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7KSR6rWsIOyiheuhnCIsInN0IjoiaW4ifSx7Im5pY2siOiLrtITsnbQiLCJ5ZWFyIjoxOTgyLCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iuq0keuqhSIsInN0Ijoib3V0In0seyJuaWNrIjoi67aA7ISdIiwieWVhciI6MTk4NiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLslYjslpEiLCJzdCI6ImluIn0seyJuaWNrIjoi67mE67mEIiwieWVhciI6MTk5MSwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLslYjslpEiLCJzdCI6ImluIn0seyJuaWNrIjoi67mI7J20IiwieWVhciI6MTk4NiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnbjsspwiLCJzdCI6ImluIn0seyJuaWNrIjoi7IKw67KUIiwieWVhciI6MTk4NSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLquYDtj6wiLCJzdCI6ImluIn0seyJuaWNrIjoi7IOB66+8IiwieWVhciI6MTk5MywiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnbjsspwiLCJzdCI6Im91dCJ9LHsibmljayI6IuyEuOudvCIsInllYXIiOjE5ODYsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4IOyEnOy0iCIsInN0IjoiaW4ifSx7Im5pY2siOiLshLjslYQiLCJ5ZWFyIjoxOTg4LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iuu2gOyynCIsInN0Ijoib3V0In0seyJuaWNrIjoi7IaM64ukIiwieWVhciI6MTk5MCwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLshJzsmrjqsJXshJwiLCJzdCI6ImluIn0seyJuaWNrIjoi7IaM66+4IiwieWVhciI6MTk4MywiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLri4jrp5jsho0iLCJzdCI6ImluIn0seyJuaWNrIjoi7IaM7J20IiwieWVhciI6MTk4NywiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLslpHsspzqtawiLCJzdCI6ImluIn0seyJuaWNrIjoi7IiY7JWEIiwieWVhciI6MTk4NCwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnYDtj4nqtawiLCJzdCI6ImluIn0seyJuaWNrIjoi7IiY7ZiBIiwieWVhciI6MTk4MSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLqs6DslpHsi5wiLCJzdCI6ImluIn0seyJuaWNrIjoi7Iq57JqwIiwieWVhciI6MTk5NCwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsmqnsnbgiLCJzdCI6Im91dCJ9LHsibmljayI6IuyLnOyVhCIsInllYXIiOjE5ODMsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7IiY7JuQIiwic3QiOiJvdXQifSx7Im5pY2siOiLsi5zsl7AiLCJ5ZWFyIjoxOTk0LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iu2MjOyjvCbtmY3rjIAiLCJzdCI6ImluIn0seyJuaWNrIjoi7Iuc7JiBIiwieWVhciI6MTk5MSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLshJzsmrjrgq7qsbDrpqwiLCJzdCI6ImluIn0seyJuaWNrIjoi7JOw64ukIiwieWVhciI6MTk5NCwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLshJzsmrgg7Ja065SY6rCAIiwic3QiOiJub25lIn0seyJuaWNrIjoi7JWE6528IiwieWVhciI6MTk4NywiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnbjsspwiLCJzdCI6ImluIn0seyJuaWNrIjoi7JWE7JWEIiwieWVhciI6MTk4MiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLspJHqtawg7KKF66GcIiwic3QiOiJpbiJ9LHsibmljayI6IuyVpOuUlCIsInllYXIiOjE5NzksImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ZWc6rWtIiwic3QiOiJpbiJ9LHsibmljayI6IuyWhOumrCIsInllYXIiOjE5OTIsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi6rOg7JaR7Iuc6rOoIiwic3QiOiJpbiJ9LHsibmljayI6IuyXkOumrCIsInllYXIiOjE5ODksImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J247LKcIiwic3QiOiJvdXQifSx7Im5pY2siOiLsl7DrgpgiLCJ5ZWFyIjoxOTk0LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCIsInN0IjoiaW4ifSx7Im5pY2siOiLsl7DshJwiLCJ5ZWFyIjoxOTgyLCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCDrj5nrjIDrrLgiLCJzdCI6ImluIn0seyJuaWNrIjoi7Jew7JqwIiwieWVhciI6MTk4NiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsl7DsmrAsIOqzoOyWkSIsInN0IjoiaW4ifSx7Im5pY2siOiLsl7Dsp4QiLCJ5ZWFyIjoxOTkwLCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyduOyynOu2gOyynCIsInN0IjoiaW4ifSx7Im5pY2siOiLsmIjsp4AiLCJ5ZWFyIjoxOTg5LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCDsnYDtj4kg7Jew7Iug64K0Iiwic3QiOiJpbiJ9LHsibmljayI6IuyasOu5iCIsInllYXIiOjE5ODEsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4IOqwleuPmSIsInN0IjoiaW4ifSx7Im5pY2siOiLsmrDshJ0iLCJ5ZWFyIjoxOTg3LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCDqsJXrj5nshqHtjIwiLCJzdCI6Im91dCJ9LHsibmljayI6IuyasOyerCIsInllYXIiOjE5ODcsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4IOyGoe2MjCwg7J2Y7KCV67aAIiwic3QiOiJpbiJ9LHsibmljayI6IuycoO2drCIsInllYXIiOjE5ODQsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J2Y7KCV67aAIiwic3QiOiJpbiJ9LHsibmljayI6IuycpOynhCIsInllYXIiOjE5NzksImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4IOyWkeyynOq1rCIsInN0IjoiaW4ifSx7Im5pY2siOiLsnYDslYQiLCJ5ZWFyIjoxOTk1LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iu2VmOuCqCIsInN0Ijoib3V0In0seyJuaWNrIjoi7J2A7JqwIiwieWVhciI6MTk4OCwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLqsJXrj5kiLCJzdCI6ImluIn0seyJuaWNrIjoi7J2R7IqkIiwieWVhciI6MTk3OSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsm4XsiqQg7J247LKc67aA7Y+JIiwic3QiOiJub25lIn0seyJuaWNrIjoi7J247JWEIiwieWVhciI6MTk4NywiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnbjsspwiLCJzdCI6Im91dCJ9LHsibmljayI6IuyduOyYgSIsInllYXIiOjE5ODMsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J247LKcIOyXsOyImCIsInN0IjoiaW4ifSx7Im5pY2siOiLsnqXrr7giLCJ5ZWFyIjoxOTkxLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyepeuvuCDsnbjsspzqs4TslpEiLCJzdCI6Im91dCJ9LHsibmljayI6IuyerO2drCIsInllYXIiOjE5ODQsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISc7Jq4IOyEseu2gSIsInN0Ijoib3V0In0seyJuaWNrIjoi7KCc66GcIiwieWVhciI6MTk5MiwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLsnbjsspwg6rKA64uoIiwic3QiOiJpbiJ9LHsibmljayI6IuygnOydtCIsInllYXIiOjE5ODMsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7ISx67aBIiwic3QiOiJpbiJ9LHsibmljayI6IuyhsOyngCIsInllYXIiOjE5OTQsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7KGw7KeAIOq1rOuhnCIsInN0IjoiaW4ifSx7Im5pY2siOiLso7zri4giLCJ5ZWFyIjoxOTkwLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCIsInN0IjoiaW4ifSx7Im5pY2siOiLso7zrnbwiLCJ5ZWFyIjoxOTkwLCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iu2Pie2DnSIsInN0IjoiaW4ifSx7Im5pY2siOiLso7zrpqwiLCJ5ZWFyIjoxOTg4LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iuu2gOyynCIsInN0Ijoib3V0In0seyJuaWNrIjoi7KSA7ZiBIiwieWVhciI6MTk4NSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLsgrzshLHrj5kiLCJzdCI6ImluIn0seyJuaWNrIjoi7KSA7Zi4IiwieWVhciI6MTk4NCwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLslYjsgrAiLCJzdCI6ImluIn0seyJuaWNrIjoi7KWs7KWsIiwieWVhciI6MTk5NCwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLshJzsmrgg7Ja065SY6rCAIiwic3QiOiJpbiJ9LHsibmljayI6IuyngO2YuCIsInllYXIiOjE5OTIsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi6rOg7JaRIiwic3QiOiJvdXQifSx7Im5pY2siOiLsp4TsmrEiLCJ5ZWFyIjoxOTgzLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyImOybkCIsInN0IjoiaW4ifSx7Im5pY2siOiLsp4TsnbQiLCJ5ZWFyIjoxOTg1LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOy0iCIsInN0Ijoib3V0In0seyJuaWNrIjoi7LCo64uIIiwieWVhciI6MTk4NSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLssKjri4gg6riI7LKcIiwic3QiOiJvdXQifSx7Im5pY2siOiLssL3si50iLCJ5ZWFyIjoxOTkwLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyduOyynCIsInN0IjoiaW4ifSx7Im5pY2siOiLssqDsiJgiLCJ5ZWFyIjoxOTgyLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuuvuOyCrCIsInN0Ijoib3V0In0seyJuaWNrIjoi7LK066asIiwieWVhciI6MTk4NCwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLrtoDsspwo6rSR66qFKSIsInN0IjoiaW4ifSx7Im5pY2siOiLstIjslYQiLCJ5ZWFyIjoxOTkzLCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuqwleyEnCjrgrTrhYQg64W47JuQ7JiI7KCVKSIsInN0IjoiaW4ifSx7Im5pY2siOiLstIjsl7AiLCJ5ZWFyIjoxOTkyLCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCDrp4jtj6wiLCJzdCI6ImluIn0seyJuaWNrIjoi7LSI7J20IiwieWVhciI6MTk4NCwiZ2VuZGVyIjoi7JesIiwibWFycnkiOiIiLCJyZWdpb24iOiLshLHrj5nqtawiLCJzdCI6ImluIn0seyJuaWNrIjoi7LWc67O06528IiwieWVhciI6MCwiZ2VuZGVyIjoiIiwibWFycnkiOiIiLCJyZWdpb24iOiLrp4jtj6wiLCJzdCI6ImluIn0seyJuaWNrIjoi7LaY7IudIiwieWVhciI6MTk4OSwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLshJzsmrjqtazroZzqtawiLCJzdCI6Im91dCJ9LHsibmljayI6Iuy5tOy5tCIsInllYXIiOjE5ODMsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi66eI7Y+sIiwic3QiOiJpbiJ9LHsibmljayI6Iuy/oO2CpCIsInllYXIiOjE5OTEsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi64W47JuQIiwic3QiOiJvdXQifSx7Im5pY2siOiLtgqTsnIQiLCJ5ZWFyIjoxOTk2LCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyEnOyauCDqsJXrgqjqtawiLCJzdCI6ImluIn0seyJuaWNrIjoi7YOc7ISxIiwieWVhciI6MTk4NCwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLslpHsspwiLCJzdCI6ImluIn0seyJuaWNrIjoi7Yag64uIIiwieWVhciI6MTk4MCwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiJQYW5neW8iLCJzdCI6Im5vbmUifSx7Im5pY2siOiLtiKzsnKAiLCJ5ZWFyIjoxOTg0LCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iu2IrOycoCzshLHrgqgiLCJzdCI6Im91dCJ9LHsibmljayI6Iu2Oreq1rCIsInllYXIiOjE5ODksImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J2Y7KCV67aAIiwic3QiOiJpbiJ9LHsibmljayI6Iu2VmOumsCIsInllYXIiOjE5ODgsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi64yA7LapIOqwleyEnCIsInN0IjoiaW4ifSx7Im5pY2siOiLtlZzrgpgiLCJ5ZWFyIjoxOTgzLCJnZW5kZXIiOiLsl6wiLCJtYXJyeSI6IiIsInJlZ2lvbiI6IuyduOyynCIsInN0IjoiaW4ifSx7Im5pY2siOiLtlonrgqgiLCJ5ZWFyIjoxOTgzLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iuqyveq4sCDsi5ztnaUiLCJzdCI6ImluIn0seyJuaWNrIjoi7ZiA6riwIiwieWVhciI6MTk4MiwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLquIjsspwiLCJzdCI6ImluIn0seyJuaWNrIjoi7Zi47ZiEIiwieWVhciI6MTk5NCwiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLtmZTshLEiLCJzdCI6Im91dCJ9LHsibmljayI6Iu2aqOumrCIsInllYXIiOjE5OTEsImdlbmRlciI6IuyXrCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7J247LKcIOunjOyImOuPmSIsInN0Ijoib3V0In0seyJuaWNrIjoi7ZuE65OcIiwieWVhciI6MTk4MywiZ2VuZGVyIjoi64KoIiwibWFycnkiOiIiLCJyZWdpb24iOiLtm4Trk5wg7ISc7Jq4Iiwic3QiOiJpbiJ9LHsibmljayI6Iu2eiOuhnCIsInllYXIiOjE5ODMsImdlbmRlciI6IuuCqCIsIm1hcnJ5IjoiIiwicmVnaW9uIjoi7IiY7JuQIiwic3QiOiJvdXQifSx7Im5pY2siOiLtnojtmLgiLCJ5ZWFyIjoxOTkzLCJnZW5kZXIiOiLrgqgiLCJtYXJyeSI6IiIsInJlZ2lvbiI6Iuu2gOyynCIsInN0IjoiaW4ifV0sImFsaWFzIjp7IuyGoeuPhCI6IuyXsOyImOq1rCIsIuyyreudvCI6IuyEnOq1rCIsIuqygOuLqCI6IuyEnOq1rCIsIuyYgeyihSI6Iuykkeq1rCIsIuu2gO2PiSI6Iuu2gO2Pieq1rCIsIuqzhOyWkSI6IuqzhOyWkeq1rCIsIuq1rOyblCI6IuuCqOuPmeq1rCIsIuuFvO2YhCI6IuuCqOuPmeq1rCIsIuyjvOyViCI6IuuvuOy2lO2ZgOq1rCIsIuuPmeyduOyynCI6Iuykkeq1rCIsIuu2hOuLuSI6IuyEseuCqCIsIu2MkOq1kCI6IuyEseuCqCIsIuydvOyCsCI6IuqzoOyWkSIsIuuPme2DhCI6Iu2ZlOyEsSIsIuyCsOuzuCI6Iuq1sO2PrCIsIu2Piey0jCI6IuyViOyWkSIsIuq0keq1kCI6IuyImOybkCIsIuuvuOyCrCI6Iu2VmOuCqCIsIuuwsOqzpyI6IuyLnO2dpSIsIuyatOyglSI6Iu2MjOyjvCIsIuychOuhgCI6IuyEseuCqCIsIuyDgeustOyngOq1rCI6Iuq0keyjvCIsIuyEnOuptCI6Iuu2gOyCsCIsIuuRlOyCsCI6IuuMgOyghCIsIuuPmeyEseuhnCI6IuuMgOq1rCIsIuyYpeuPmSI6IuyViOuPmSJ9LCJub3FqIjpbIuqzoOuLiCA4OCDrgqgiLCLsgpDsgpAgODgg7JesIiwi7ISd7J20IDgzIOuCqCIsIuybheyKpCA3OSDrgqgiLCLstpjsi7EgODkg64KoIl19", PLAIN = true, ITER = 250000, PUB = 1791724093, EXP = 1791810493, ROOM = "라복순";
+var GEO_URL = "../../geo/kr.json";          /* qj/geo/kr.json — 봇이 한 번만 올려 두는 경계 자료 (밑줄 폴더는 Pages 가 무시하므로 쓰지 않음) */
+var GEO=null, PATHS, CENTS, MPATHS, MCENTS, VB=[0,0,400,500];
+var P=null;           /* {room, pub, members:[{nick,year,gender,marry,region}], alias:{}} */
+
+/* ───────── 지역 계층 (RegionData.js 의 묶음) ───────── */
+var TREE = {
+  "전국":   { kids:["수도권","강원","충청","전라","경상","제주"] },
+  "수도권": { kids:["서울","경기","인천"] },
+  "강원":   { kids:["강원영서","강원영동"] },
+  "충청":   { kids:["충북","충남","대전","세종"] },
+  "전라":   { kids:["전북","전남","광주광역시"] },
+  "경상":   { kids:["경북","경남","대구","부산","울산"] },
+  "제주":   { kids:[] },
+  "서울":   { kids:["서울북부","서울남부"] },
+  "경기":   { kids:["경기북부","경기남부"] },
+  "인천":   { kids:[] }
+};
+var SIDO_OF={"서울북부":"서울","서울남부":"서울","경기북부":"경기","경기남부":"경기","강원영서":"강원","강원영동":"강원","인천":"인천","충북":"충북","충남":"충남","대전":"대전","세종":"세종","전북":"전북","전남":"전남","광주광역시":"광주광역시","경북":"경북","경남":"경남","대구":"대구","부산":"부산","울산":"울산","제주":"제주"};
+var ZOOM_ORDER = ["강원영서","강원영동","경기북부","경기남부","인천","충북","충남","전북","전남","경북","경남","제주","서울북부","서울남부","대전","세종","광주광역시","대구","울산","부산"];
+var PARENT = {};
+(function(){for (var k in TREE) TREE[k].kids.forEach(function(c){PARENT[c]=k;});})();
+function leaves(name){ var t=TREE[name]; if(!t||!t.kids.length) return [name]; var out=[]; t.kids.forEach(function(c){out=out.concat(leaves(c));}); return out; }
+function chain(name){ var p=[name]; while(PARENT[p[0]]) p.unshift(PARENT[p[0]]); if(p[0]!=="전국") p.unshift("전국"); return p; }
+function depth(name){ return chain(name).length-1; }
+function short(n){ return n==="광주광역시"?"광주":n; }
+
+/* ───────── 지역 문자열 → 잎 지역 → 시군구 ───────── */
+var SEOUL_S=["강남구","서초구","송파구","강동구","양천구","강서구","구로구","금천구","영등포구","동작구","관악구","강남","서초","송파","강동","양천","강서","구로","금천","영등포","동작","관악","잠실","신림","목동"];
+var SEOUL_N=["종로구","중구","용산구","성동구","광진구","동대문구","중랑구","성북구","강북구","도봉구","노원구","은평구","서대문구","마포구","종로","용산","성동","광진","동대문","중랑","성북","강북","도봉","노원","은평","서대문","마포","홍대","신촌","건대","왕십리"];
+var GG_S=["수원","성남","안양","용인","부천","안산","화성","평택","광명","시흥","군포","의왕","하남","오산","이천","안성","김포","경기광주","여주","양평","과천","분당","판교","위례","광교","동탄","산본","평촌","미사","배곧","수지","죽전","일직","영통","범계","인덕원","중동","상동","철산","호매실","인계","매탄","야탑","서현","정자","모란","동백","기흥","역북","심곡","역곡","송내","고잔","본오","선부","병점","향남","봉담","고덕","송탄","안중","지제","정왕","목감","은계","장현","월곶","한강신도시","구래","운양","장기","풍무","고촌","하안","소하","태전","경안","곤지암","오포","금정","세교","부발","장호원","공도","내손","감일","풍산","가남","용문","양수리"];
+var GG_N=["고양","파주","의정부","양주","동두천","포천","연천","가평","남양주","구리","일산","운정","다산","별내","옥정","민락","삼송","화정","원흥","행신","킨텍스","진접","화도","마석","평내","호평","덕소","호원","신곡","교하","금촌","문산","회천","덕정","갈매","인창","소흘","송우","지행","청평","전곡"];
+var LEAF_INDEX={ "서울남부":SEOUL_S,"서울북부":SEOUL_N,"경기남부":GG_S,"경기북부":GG_N,
+  "인천":["인천","계양","부평","서구","강화","연수","미추홀","남동","옹진","송도","청라","영종","검단","구월","논현","주안","동인천"],
+  "강원영서":["춘천","원주","홍천","횡성","철원","화천","양구","인제","평창","정선","영월"],
+  "강원영동":["강릉","속초","동해","삼척","태백","고성","양양"],
+  "충북":["청주","충주","제천","음성","진천","증평","괴산","보은","옥천","영동","단양"],
+  "충남":["천안","아산","서산","당진","공주","보령","논산","계룡","홍성","예산","부여","서천","청양","태안","금산"],
+  "대전":["대전","둔산","도안","노은","은행동","봉명","유성"],"세종":["세종","나성","새롬","다정","어진","도담","아름","종촌"],
+  "전북":["전주","익산","군산","정읍","남원","김제","완주","부안","고창","순창","임실","장수","무주","진안"],
+  "전남":["목포","여수","순천","나주","광양","무안","화순","해남","영암","담양","곡성","구례","고흥","보성","장흥","강진","완도","진도","신안","영광","장성","함평"],
+  "광주광역시":["광주","상무지구","수완","첨단","봉선","양림","풍암","일곡","광산"],
+  "경북":["포항","경주","안동","구미","경산","영주","영천","상주","문경","칠곡","예천","김천","의성","청송","영양","영덕","청도","고령","성주","군위","봉화","울진"],
+  "경남":["창원","진주","김해","양산","거제","통영","사천","밀양","함안","거창","마산","진해","의령","창녕","남해","하동","산청","함양","합천"],
+  "대구":["대구","동성로","범어","상인","시지","두류","침산","달서","수성","달성"],"부산":["부산","서면","해운대","광안리","남포","센텀","마린시티","사상","덕천","화명","하단","동래","기장","수영","사하","영도","금정"],
+  "울산":["울산","삼산","성남동","무거","달동","울주"],"제주":["제주","서귀포","애월","한림"] };
+var SIDO_HINT={"서울":"서울북부","경기":"경기남부","인천":"인천","강원":"강원영서","충북":"충북","충남":"충남","전북":"전북","전남":"전남","경북":"경북","경남":"경남","부산":"부산","대구":"대구","울산":"울산","대전":"대전","세종":"세종","제주":"제주"};
+/* 동네·신도시 → 시군구 (RegionData alias + 도시별 동네 목록) */
+var TOWN={"일산":"고양시","삼송":"고양시","화정":"고양시","원흥":"고양시","행신":"고양시","킨텍스":"고양시","분당":"성남시","판교":"성남시","위례":"성남시","야탑":"성남시","서현":"성남시","정자":"성남시","모란":"성남시","동탄":"화성시","병점":"화성시","향남":"화성시","봉담":"화성시","산본":"군포시","금정":"군포시","평촌":"안양시","범계":"안양시","인덕원":"안양시","광교":"수원시","영통":"수원시","호매실":"수원시","인계":"수원시","매탄":"수원시","미사":"하남시","감일":"하남시","풍산":"하남시","배곧":"시흥시","정왕":"시흥시","목감":"시흥시","은계":"시흥시","장현":"시흥시","월곶":"시흥시","운정":"파주시","교하":"파주시","금촌":"파주시","문산":"파주시","수지":"용인시","죽전":"용인시","동백":"용인시","기흥":"용인시","역북":"용인시","중동":"부천시","상동":"부천시","심곡":"부천시","역곡":"부천시","송내":"부천시","철산":"광명시","하안":"광명시","소하":"광명시","일직":"광명시","고잔":"안산시","본오":"안산시","선부":"안산시","다산":"남양주시","별내":"남양주시","진접":"남양주시","화도":"남양주시","마석":"남양주시","평내":"남양주시","호평":"남양주시","덕소":"남양주시","옥정":"양주시","회천":"양주시","덕정":"양주시","민락":"의정부시","호원":"의정부시","신곡":"의정부시","고덕":"평택시","송탄":"평택시","안중":"평택시","지제":"평택시","한강신도시":"김포시","구래":"김포시","운양":"김포시","장기":"김포시","풍무":"김포시","고촌":"김포시","태전":"광주시","경안":"광주시","곤지암":"광주시","오포":"광주시","경기광주":"광주시","경광":"광주시","세교":"오산시","부발":"이천시","장호원":"이천시","갈매":"구리시","인창":"구리시","공도":"안성시","소흘":"포천시","송우":"포천시","내손":"의왕시","가남":"여주시","용문":"양평군","양수리":"양평군","지행":"동두천시","청평":"가평군","전곡":"연천군",
+  "잠실":"송파구","신림":"관악구","목동":"양천구","홍대":"마포구","신촌":"서대문구","건대":"광진구","왕십리":"성동구",
+  "송도":"연수구","청라":"서구","검단":"서구","영종":"중구","부평":"부평구","계양":"계양구","구월":"남동구","논현":"남동구","주안":"남구","미추홀":"남구","동인천":"중구",
+  "서면":"부산진구","해운대":"해운대구","광안리":"수영구","남포":"중구","센텀":"해운대구","마린시티":"해운대구","사상":"사상구","덕천":"북구","화명":"북구","하단":"사하구","동래":"동래구",
+  "동성로":"중구","범어":"수성구","상인":"달서구","시지":"수성구","두류":"달서구","침산":"북구",
+  "상무지구":"서구","수완":"광산구","첨단":"광산구","봉선":"남구","양림":"남구","풍암":"서구","일곡":"북구",
+  "둔산":"서구","도안":"서구","노은":"유성구","은행동":"중구","봉명":"유성구","삼산":"남구","성남동":"중구","무거":"남구","달동":"남구",
+  "서귀포":"서귀포시","애월":"제주시","한림":"제주시","마산":"창원시","진해":"창원시"};
+var SUF=/(특별시|광역시|특별자치시|특별자치도|도|시|군|구|읍|동)$/;
+function classify(region){
+  var s=String(region||"").replace(/[()\[\],]/g," ").trim(); if(!s) return "";
+  var toks=s.split(/\s+/).reverse(), i, k, j;
+  for (i=0;i<toks.length;i++){ var t=toks[i].replace(SUF,"")||toks[i];
+    if (/^경기?광주$|^경광$/.test(toks[i])) return "경기남부";
+    for (k in LEAF_INDEX){ var L=LEAF_INDEX[k]; for (j=0;j<L.length;j++) if (t===L[j]||toks[i]===L[j]||(L[j].length>=2&&t.indexOf(L[j])===0)) return k; } }
+  for (i=0;i<toks.length;i++) for (k in SIDO_HINT) if (toks[i].indexOf(k)===0) return SIDO_HINT[k];
+  return "";
+}
+function muniOf(region, leaf){
+  var mc=MCENTS[leaf]; if(!mc) return "";
+  var s=String(region||"").replace(/[()\[\],]/g," ").trim(), toks=s.split(/\s+/).reverse(), i, n;
+  for (i=0;i<toks.length;i++){ var raw=toks[i], t=raw.replace(SUF,"")||raw;
+    var al=TOWN[raw]||TOWN[t]; if(al && mc[al]) return al;
+    for (n in mc){ var n0=n.replace(SUF,""); if(n0===t||n===raw) return n; }
+    for (n in mc){ var n0b=n.replace(SUF,""); if(t.length>=2 && n0b.length>=2 && (n0b.indexOf(t)===0||t.indexOf(n0b)===0)) return n; } }
+  if (leaf==="제주") return "제주시";
+  return "";
+}
+
+/* ───────── 회원 자료 (봇이 넣어 준 공질의 지역 칸) ───────── */
+var MEMBERS=[], ALL=[], INC_OUT=false, SORT="age", DIR=1, GROUP=true;   /* GROUP: 지역구분 켬/끔 */   /* SORT: age(연령) | name(닉네임) · DIR: 1 오름 · -1 내림 */
+function cmpM(x,y){ var r;
+  if(SORT==="name") r=x.nick.localeCompare(y.nick,"ko")*DIR || (x.year||9999)-(y.year||9999);
+  else if(SORT==="gender") r=(x.gender||"힣").localeCompare(y.gender||"힣","ko")*DIR || x.nick.localeCompare(y.nick,"ko");
+  else if(SORT==="marry") r=(x.marry||"힣").localeCompare(y.marry||"힣","ko")*DIR || x.nick.localeCompare(y.nick,"ko");
+  else { var a=x.year||0,b=y.year||0; if(!a&&!b) r=0; else if(!a) r=1; else if(!b) r=-1; else r=(b-a)*DIR;   /* 연령 오름 = 어린 사람(년생 큰 쪽)부터 · 년생 없는 사람은 늘 뒤 */
+    r=r||x.nick.localeCompare(y.nick,"ko"); }
+  return r; }   /* st: in(재실) · away(외출) · out(퇴장) · none(회원DB에 없음/판정불가) */
+function loadMembers(){ ALL=[]; var al=(P&&P.alias)||{}; for(var k in al) if(al.hasOwnProperty(k)&&!TOWN[k]) TOWN[k]=al[k];
+  (P.members||[]).forEach(function(m){ var lf=classify(m.region); ALL.push({nick:m.nick,year:m.year||0,gender:m.gender||"",marry:m.marry||"",region:m.region||"",st:m.st||"none",leaf:lf,muni:lf?muniOf(m.region,lf):""}); });
+  applyFilter(); }
+function applyFilter(){ MEMBERS=ALL.filter(function(m){ return INC_OUT || m.st!=="out"; }); }
+function nOut(){ return ALL.filter(function(m){return m.st==="out";}).length; }
+function stPill(m){ return m.st==="away"?'<span class="pill o">외출</span>':m.st==="out"?'<span class="pill r">퇴장</span>':""; }
+
+/* ───────── 상태 ───────── */
+var CUR="전국", LEAF_SEL="", MUNI_SEL="", NOLOC=false, VIEW={x:0,y:0,w:400,h:500};
+var DRAGGED=false;
+var svg=document.getElementById("map"), app=document.getElementById("app");
+function el(n,a){var e=document.createElementNS("http://www.w3.org/2000/svg",n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function toast(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove("on");},2200);}
+function countIn(name){ var L=leaves(name), n=0; MEMBERS.forEach(function(m){ if(L.indexOf(m.leaf)>=0) n++; }); return n; }
+var NUMS={}; function nums(n){ if(!NUMS[n]){ var a=(PATHS[n]||"").match(/-?\d+(\.\d+)?/g)||[]; NUMS[n]=a.map(Number);} return NUMS[n]; }
+function bbox(names){var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;names.forEach(function(n){var a=nums(n);for(var i=0;i<a.length;i+=2){x0=Math.min(x0,a[i]);y0=Math.min(y0,a[i+1]);x1=Math.max(x1,a[i]);y1=Math.max(y1,a[i+1]);}});return {x:x0,y:y0,w:x1-x0,h:y1-y0};}
+/* 묶음 라벨은 하위 잎 대표점의 평균 (수도권은 경기 쪽으로, 경상은 경북·경남 사이로) */
+var GROUP_LBL={"수도권":["경기북부","경기남부"],"경상":["경북","경남"],"충청":["충북","충남"],"전라":["전북","전남"],"강원":["강원영서","강원영동"],"서울":["서울북부","서울남부"],"경기":["경기북부","경기남부"]};
+function labelPos(u){ if(CENTS[u]) return CENTS[u]; var ls=GROUP_LBL[u]||leaves(u),x=0,y=0,n=0; ls.forEach(function(l){ if(CENTS[l]){x+=CENTS[l][0];y+=CENTS[l][1];n++;} }); return n?[x/n,y/n]:[0,0]; }
+/* 잎 조각 → 지금 단계에서의 클릭 단위 (범위 안이면 하위, 밖이면 같은 깊이의 다른 지역) */
+function targetOf(leaf){
+  var kids=TREE[CUR]?TREE[CUR].kids:[], n;
+  if(leaves(CUR).indexOf(leaf)>=0){ if(!kids.length) return CUR; n=leaf; while(n && kids.indexOf(n)<0) n=PARENT[n]; return n||""; }
+  var c=chain(leaf), d=depth(CUR); return c[Math.min(d,c.length-1)];
+}
+function colorOf(leaf){ return "var(--c-"+(SIDO_OF[leaf]||"경기")+")"; }
+function showMuni(){ var kids=TREE[CUR]?TREE[CUR].kids:[]; if(CUR==="전국") return false; if(!kids.length) return true; return kids.every(function(k){return !(TREE[k]&&TREE[k].kids.length);}) && depth(CUR)>=1 && CUR!=="수도권"; }
+function u(px){ return px*VIEW.w/400; }
+/* 기본 화면: 남한 전체 + 북쪽은 휴전선 위로 조금 (독도까지 가로로 포함) */
+function homeView(){ var b=bbox(ZOOM_ORDER); b.x-=6; b.w+=12; b.y-=22; b.h+=28;   /* 울릉도·독도는 기본 화면 밖 (오른쪽으로 끌면 보임) */
+  var ar=VB[2]/VB[3]; if(b.w/b.h>ar){var nh=b.w/ar;b.y-=(nh-b.h)/2;b.h=nh;} else {var nw=b.h*ar;b.x-=(nw-b.w)/2;b.w=nw;} return b; }   /* 화면 픽셀 감각을 지도 좌표로 (확대해도 같은 크기) */
+
+function drawMap(){
+  if(!GEO) return;
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  var kids=TREE[CUR]?TREE[CUR].kids:[]; var isLeaf=!kids.length, inScope=leaves(CUR);
+  var defs=el("defs",{}); var pat=el("pattern",{id:"hatch",width:"6",height:"6",patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  var pl=el("line",{x1:"0",y1:"0",x2:"0",y2:"6",stroke:"var(--nk-txt)","stroke-width":"0.7","stroke-opacity":"0.35"}); pat.appendChild(pl); defs.appendChild(pat); svg.appendChild(defs);
+  /* 북한 */
+  svg.appendChild(el("path",{d:GEO.others,"class":"other"}));
+  var nk=el("path",{d:GEO.nk,"class":"nk"}); svg.appendChild(nk); svg.appendChild(el("path",{d:GEO.nk,"class":"nkh"}));
+  var gS=el("g",{}), gM=el("g",{}), gL=el("g",{}), gP=el("g",{});
+  ZOOM_ORDER.forEach(function(name){
+    var inside=inScope.indexOf(name)>=0, tgt=targetOf(name);
+    var p=el("path",{d:PATHS[name],"class":"reg"+(inside?"":" dim")+(isLeaf&&name===CUR?" leafsel":"")});
+    p.style.fill=colorOf(name);
+    p.addEventListener("click",function(){ if(DRAGGED) return; if(inside&&isLeaf){ MUNI_SEL=""; render(); } else go(tgt); });
+    var tt=el("title",{}); tt.textContent=short(tgt)+" · "+countIn(tgt)+"명"+(inside?"":" (이동)"); p.appendChild(tt);
+    gS.appendChild(p);
+    if(inside && showMuni() && MPATHS[name]){ var mp=MPATHS[name]; Object.keys(mp).forEach(function(mn){ var q=el("path",{d:mp[mn],"class":"muni"+(MUNI_SEL===mn?" on":"")});
+        var qt=el("title",{}); qt.textContent=mn; q.appendChild(qt);
+        q.addEventListener("click",function(ev){ ev.stopPropagation(); if(DRAGGED) return; if(!isLeaf){ go(tgt); return; } MUNI_SEL=(MUNI_SEL===mn)?"":mn; render(); });
+        gM.appendChild(q); }); }
+  });
+  /* 울릉도 · 독도 */
+  var r0=u(2.2); svg.appendChild(gS); svg.appendChild(gM);
+  [["울릉도",GEO.ulleung,u(3.2)],["독도",GEO.dokdo,u(1.8)]].forEach(function(d){ gL.appendChild(el("circle",{cx:d[1][0],cy:d[1][1],r:d[2],"class":"isl"}));
+    var t=el("text",{x:d[1][0],y:d[1][1]-d[2]-u(2),"class":"isl-l","font-size":u(7)}); t.textContent=d[0]; gL.appendChild(t); });
+  /* 바다 · 북한 이름 */
+  [["東海","East Sea",GEO.sea["동해"]],["南海","South Sea",GEO.sea["남해"]],["西海 (黃海)","West Sea (Yellow Sea)",GEO.sea["서해"]]].forEach(function(s){
+    var t=el("text",{x:s[2][0],y:s[2][1],"class":"sea-l","font-size":u(11)}); var a=el("tspan",{}); a.textContent=s[0]; t.appendChild(a);
+    var b=el("tspan",{x:s[2][0],dy:u(11),"class":"en","font-size":u(7.5)}); b.textContent=s[1]; t.appendChild(b); gL.appendChild(t); });
+  if(VIEW.w>=VB[2]*0.3){ [["조선민주주의인민공화국",GEO.lab["북한"],8],["중화인민공화국",GEO.lab["중국"],7.5],["일본",GEO.lab["일본"],7.5]].forEach(function(d){ var nt=el("text",{x:d[1][0],y:d[1][1],"class":"nk-l","font-size":u(d[2])}); nt.textContent=d[0]; gL.appendChild(nt); }); }
+  /* 지역 라벨: 클릭 단위마다 */
+  var units=isLeaf?[]:kids, fs=u(11);   /* 잎 단계에서는 경로 표시가 이름을 대신하므로 큰 라벨은 생략 */
+  units.forEach(function(x){ var c=labelPos(x); if(!c[0]&&!c[1]) return; var n=countIn(x);
+    var t=el("text",{x:c[0],y:c[1],"class":"lbl","font-size":fs,"stroke-width":fs*0.28});
+    var a=el("tspan",{}); a.textContent=short(x); t.appendChild(a);
+    var b=el("tspan",{x:c[0],dy:fs*1.05,"class":"cnt","font-size":fs*.82}); b.textContent=n+"명"; t.appendChild(b); gL.appendChild(t); });
+  svg.appendChild(gL);
+  /* 시군구 핀 */
+  if(showMuni()){ var byM={}; MEMBERS.forEach(function(m){ if(inScope.indexOf(m.leaf)<0||!m.muni) return; var k=m.leaf+"|"+m.muni; (byM[k]=byM[k]||{leaf:m.leaf,muni:m.muni,n:0}).n++; });
+    Object.keys(byM).forEach(function(k){ var it=byM[k], c=MCENTS[it.leaf][it.muni]; if(!c) return; var r=u(5.2);
+      var g=el("g",{"class":"pin"+(MUNI_SEL===it.muni?" on":"")}); g.appendChild(el("circle",{cx:c[0],cy:c[1],r:r}));
+      var t=el("text",{x:c[0],y:c[1]+r*0.38,"font-size":r*1.15}); t.textContent=it.n; g.appendChild(t);
+      var nm=el("text",{x:c[0]+r+u(1.5),y:c[1]+u(2.6),"class":"nm","font-size":u(7),"stroke-width":u(1.6)}); nm.textContent=it.muni.replace(SUF,""); g.appendChild(nm);
+      var tt=el("title",{}); tt.textContent=it.muni+" "+it.n+"명"; g.appendChild(tt);
+      g.addEventListener("click",function(ev){ ev.stopPropagation(); if(DRAGGED) return; MUNI_SEL=(MUNI_SEL===it.muni)?"":it.muni; render(); });
+      gP.appendChild(g); });
+    svg.appendChild(gP); }
+  document.getElementById("back").hidden=(CUR==="전국");
+  var lg=document.getElementById("legend");
+  var REP={"수도권":"경기남부","충청":"충남","전라":"전남","경상":"경북","강원":"강원영서","서울":"서울북부","경기":"경기남부"};
+  lg.innerHTML=(isLeaf?[CUR]:kids).map(function(k){ var lf=REP[k]||leaves(k)[0]; return '<div><i style="background:'+colorOf(lf)+'"></i>'+short(k)+' '+countIn(k)+'명</div>'; }).join("")+(showMuni()?'<div><i style="background:var(--pin);border-color:var(--pin);border-radius:50%"></i>시군구별 회원 수 (누르면 명단 필터)</div>':'');
+  document.getElementById("hint").textContent= isLeaf ? "핀을 누르면 그 시군구 회원만 보입니다 · 지도의 다른 지역을 누르면 그곳으로 바로 이동합니다"
+    : CUR==="전국" ? "권역을 누르면 확대됩니다 · 끌어서 이동, 휠·핀치로 확대/축소 · ⌖ 는 지역에 맞춤"
+    : "하위 지역을 누르면 더 들어가고, 범위 밖 지역을 누르면 그곳으로 바로 이동합니다";
+}
+var anim=null;
+function zoomTo(box,nopad){ var pad=nopad?0:Math.max(box.w,box.h)*0.16, target={x:box.x-pad,y:box.y-pad,w:box.w+pad*2,h:box.h+pad*2};
+  var ar=VB[2]/VB[3]; if(target.w/target.h>ar){var nh=target.w/ar;target.y-=(nh-target.h)/2;target.h=nh;} else {var nw=target.h*ar;target.x-=(nw-target.w)/2;target.w=nw;}
+  var from={x:VIEW.x,y:VIEW.y,w:VIEW.w,h:VIEW.h}, t0=performance.now(), dur=matchMedia("(prefers-reduced-motion: reduce)").matches?0:420;
+  if(anim) cancelAnimationFrame(anim);
+  (function step(now){ var k=dur?Math.min(1,(now-t0)/dur):1; k=1-Math.pow(1-k,3);
+    VIEW={x:from.x+(target.x-from.x)*k,y:from.y+(target.y-from.y)*k,w:from.w+(target.w-from.w)*k,h:from.h+(target.h-from.h)*k};
+    svg.setAttribute("viewBox",[VIEW.x,VIEW.y,VIEW.w,VIEW.h].join(" "));
+    if(k<1) anim=requestAnimationFrame(step); else drawMap(); })(t0);
+}
+function go(name){ if(!name) return; CUR=name; MUNI_SEL=""; NOLOC=false; render(); zoomTo(name==="전국"?homeView():bbox(leaves(name)),name==="전국"); }
+document.getElementById("back").onclick=function(){ go(PARENT[CUR]||"전국"); };
+
+/* ───────── 끌어서 이동 · 휠/핀치 확대 ───────── */
+var PTRS={}, pinch0=null, redrawT=null, wrap=document.getElementById("mapwrap");
+function setView(v){ VIEW=v; svg.setAttribute("viewBox",[v.x,v.y,v.w,v.h].join(" ")); clearTimeout(redrawT); redrawT=setTimeout(drawMap,140); }
+function clampView(v){ var maxW=VB[2]*1.6, minW=VB[2]*0.03; if(v.w>maxW){var k=maxW/v.w;v.w=maxW;v.h*=k;} if(v.w<minW){var k2=minW/v.w;v.w=minW;v.h*=k2;}
+  var cx=v.x+v.w/2, cy=v.y+v.h/2; cx=Math.max(VB[0]-VB[2]*0.3,Math.min(VB[0]+VB[2]*1.3,cx)); cy=Math.max(VB[1]-VB[3]*0.3,Math.min(VB[1]+VB[3]*1.3,cy)); v.x=cx-v.w/2; v.y=cy-v.h/2; return v; }
+function svgPt(cx,cy){ var r=svg.getBoundingClientRect(); return [VIEW.x+(cx-r.left)/r.width*VIEW.w, VIEW.y+(cy-r.top)/r.height*VIEW.h]; }
+function zoomAt(f,cx,cy){ var p=svgPt(cx,cy); var v={w:VIEW.w/f,h:VIEW.h/f}; v.x=p[0]-(p[0]-VIEW.x)/f; v.y=p[1]-(p[1]-VIEW.y)/f; if(anim)cancelAnimationFrame(anim); setView(clampView(v)); }
+wrap.addEventListener("wheel",function(e){ e.preventDefault(); zoomAt(e.deltaY<0?1.18:1/1.18,e.clientX,e.clientY); },{passive:false});
+svg.addEventListener("pointerdown",function(e){ if(e.button&&e.button!==0) return; PTRS[e.pointerId]={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,id:e.pointerId}; DRAGGED=false;
+  var ids=Object.keys(PTRS); if(ids.length===2){ var a=PTRS[ids[0]],b=PTRS[ids[1]]; pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),view:{x:VIEW.x,y:VIEW.y,w:VIEW.w,h:VIEW.h},cx:(a.x+b.x)/2,cy:(a.y+b.y)/2}; } });
+svg.addEventListener("pointermove",function(e){ var p=PTRS[e.pointerId]; if(!p) return; var ids=Object.keys(PTRS), r=svg.getBoundingClientRect();
+  if(ids.length>=2&&pinch0){ p.x=e.clientX;p.y=e.clientY; var a=PTRS[ids[0]],b=PTRS[ids[1]], d=Math.hypot(a.x-b.x,a.y-b.y), f=d/pinch0.d, cx=(a.x+b.x)/2, cy=(a.y+b.y)/2;
+    var v0=pinch0.view, px=v0.x+(pinch0.cx-r.left)/r.width*v0.w, py=v0.y+(pinch0.cy-r.top)/r.height*v0.h; var v={w:v0.w/f,h:v0.h/f}; v.x=px-(pinch0.cx-r.left)/r.width*v.w; v.y=py-(pinch0.cy-r.top)/r.height*v.h;
+    v.x-=(cx-pinch0.cx)/r.width*v.w; v.y-=(cy-pinch0.cy)/r.height*v.h; DRAGGED=true; if(anim)cancelAnimationFrame(anim); setView(clampView(v)); return; }
+  var dx=e.clientX-p.x, dy=e.clientY-p.y; p.x=e.clientX; p.y=e.clientY;
+  if(!DRAGGED && Math.hypot(e.clientX-p.sx,e.clientY-p.sy)<5) return;
+  if(!DRAGGED){ try{ svg.setPointerCapture(e.pointerId); }catch(x){} }   /* 끌기가 시작된 뒤에만 캡처 — 처음부터 잡으면 click 이 path 가 아닌 svg 로 가서 PC 클릭이 안 됨 */
+  DRAGGED=true; wrap.classList.add("drag"); if(anim)cancelAnimationFrame(anim);
+  setView(clampView({x:VIEW.x-dx/r.width*VIEW.w,y:VIEW.y-dy/r.height*VIEW.h,w:VIEW.w,h:VIEW.h})); });
+function ptrUp(e){ try{ if(svg.hasPointerCapture&&svg.hasPointerCapture(e.pointerId)) svg.releasePointerCapture(e.pointerId); }catch(x){} delete PTRS[e.pointerId]; if(Object.keys(PTRS).length<2) pinch0=null; wrap.classList.remove("drag"); setTimeout(function(){DRAGGED=false;},0); }
+svg.addEventListener("pointerup",ptrUp); svg.addEventListener("pointercancel",ptrUp);
+document.getElementById("zin").onclick=function(){ var r=svg.getBoundingClientRect(); zoomAt(1.5,r.left+r.width/2,r.top+r.height/2); };
+document.getElementById("zout").onclick=function(){ var r=svg.getBoundingClientRect(); zoomAt(1/1.5,r.left+r.width/2,r.top+r.height/2); };
+document.getElementById("zfit").onclick=function(){ zoomTo(CUR==="전국"?homeView():bbox(leaves(CUR)),CUR==="전국"); };
+
+/* ───────── 경로 · 명단 ───────── */
+function sortChips(){ return '<div class="sortrow"><span class="lb">명단</span><label><input type="checkbox" id="grpchk"'+(GROUP?" checked":"")+'> 지역구분</label></div>'; }
+function thead(){ function c(k,label){ var on=SORT===k; return '<button data-s="'+k+'"'+(on?' class="on"':'')+' title="'+(on?(DIR>0?"내림차순으로":"오름차순으로"):label+" 순으로 정렬")+'">'+label+(on?(DIR>0?" ↑":" ↓"):(k==="name"||k==="age"?" ↕":""))+'</button>'; }
+  return '<div class="thead">'+c("name","닉네임")+c("age","연령")+c("gender","성별")+c("marry","혼인")+'<span>지역</span></div>'; }
+function hierPills(m, fromDepth){ var ch=m.leaf?chain(m.leaf).slice(1):[], out=[], i;      /* [수도권, 경기, 경기남부] (전국 제외) */
+  for(i=fromDepth||0;i<ch.length;i++) out.push('<span class="hp'+(i===ch.length-1&&!m.muni?" last":"")+'">'+esc(short(ch[i]))+'</span>');
+  if(m.muni) out.push('<span class="hp muni">'+esc(m.muni.replace(SUF,""))+'</span>');
+  return out.join(""); }
+function rowHtml(m, fromDepth, gc){ var ag=m.year?String(m.year).slice(-2):"–";
+  return '<div class="tr'+(gc?" in-g":"")+'"'+(gc?' style="--gc:'+gc+'"':'')+'><span class="nk" title="'+esc(m.nick)+'">'+esc(m.nick)+(m.st==="away"?'<span class="stp away">외출</span>':m.st==="out"?'<span class="stp out">퇴장</span>':'')+'</span>'+
+    '<span class="c">'+ag+'</span><span class="c g '+(m.gender==="남"?"m":m.gender==="여"?"f":"")+'">'+esc(m.gender||"–")+'</span><span class="c">'+esc(m.marry?m.marry.charAt(0):"–")+'</span>'+
+    '<span class="rg">'+hierPills(m,fromDepth)+(m.region?'<span class="raw" title="공질에 적힌 값">'+esc(m.region)+'</span>':'')+'</span></div>'; }
+function bindSort(){ Array.prototype.forEach.call(document.querySelectorAll("[data-s]"),function(b){ b.onclick=function(){ var k=b.getAttribute("data-s"); if(SORT===k) DIR=-DIR; else { SORT=k; DIR=1; }
+  try{localStorage.setItem("kiwi.map.sort",SORT+":"+DIR);}catch(e){} render(); }; });
+  var g=document.getElementById("grpchk"); if(g) g.onchange=function(){ GROUP=g.checked; try{localStorage.setItem("kiwi.map.group",GROUP?"1":"0");}catch(e){} render(); }; }
+function nolocList(){ return MEMBERS.filter(function(m){return !m.leaf;}); }
+function renderNoloc(){
+  var all=nolocList(), empty=all.filter(function(m){return !m.region;}), unk=all.filter(function(m){return !!m.region;});
+  document.getElementById("ltitle").textContent="지역 미등록 회원"; document.getElementById("ln").textContent=all.length+" / "+MEMBERS.length;
+  var nm=all.filter(function(m){return m.gender==="남";}).length;
+  document.getElementById("stat").innerHTML='<div class="k"><b>'+all.length+'</b><span>회원</span></div><div class="k"><b>'+empty.length+'</b><span>지역 칸 비어 있음</span></div><div class="k"><b>'+unk.length+'</b><span>적혀 있지만 못 알아봄</span></div>'+sortChips();
+  var h='<div class="filt">📭 공질에 지역이 없거나 지도에 못 올린 회원입니다<button id="unf">지도 명단으로</button></div>';
+  function rows(a){ a.sort(cmpM); return thead()+a.map(function(m){ return rowHtml(m,99,""); }).join(""); }
+  if(empty.length) h+='<div class="grp">📭 지역 칸이 비어 있음 <span style="font-weight:600">'+empty.length+'</span></div>'+rows(empty);
+  if(unk.length) h+='<div class="grp">❔ 적혀 있지만 어디인지 못 알아봄 <span style="font-weight:600">'+unk.length+'</span></div>'+rows(unk)+'<p class="hintp" style="padding:6px 4px">공질의 지역 칸을 시·구 이름(예: 성남 분당, 노원구)으로 고치면 지도에 올라갑니다</p>';
+  var nq=(P.noqj||[]); if(nq.length){ h+='<div class="grp">📝 공질이 없는 재실 회원 <span style="font-weight:600">'+nq.length+'</span></div><div class="names" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 2px">'+nq.map(function(n){return '<span class="pill">'+esc(n)+'</span>';}).join("")+'</div><p class="hintp" style="padding:6px 4px">회원DB에는 있는데 공질을 올리지 않은 사람입니다</p>'; }
+  if(!all.length&&!nq.length) h+='<div class="empty">모든 회원의 지역이 지도에 올라가 있습니다</div>';
+  var body=document.getElementById("lbody"); body.innerHTML=h;
+  document.getElementById("unf").onclick=function(){ NOLOC=false; render(); }; bindSort();
+}
+function render(){
+  var nb=document.getElementById("noloc"); document.getElementById("nolocn").textContent=nolocList().length+((P.noqj||[]).length?"+"+(P.noqj||[]).length:""); nb.classList.toggle("on",NOLOC);
+  var ob=document.getElementById("incout"); ob.hidden=!nOut(); document.getElementById("incoutn").textContent=nOut(); ob.classList.toggle("on",INC_OUT);
+  ob.onclick=function(){ INC_OUT=!INC_OUT; applyFilter(); render(); };
+  nb.onclick=function(){ NOLOC=!NOLOC; render(); };
+  if(NOLOC){ renderNoloc(); var p0=chain(CUR), c0=document.getElementById("crumb"); c0.innerHTML=p0.map(function(n,i){return (i?'<span class="sep">›</span>':'')+'<button data-g="'+esc(n)+'"'+(i===p0.length-1?' class="cur"':'')+'>'+esc(short(n))+'</button>';}).join("");
+    Array.prototype.forEach.call(c0.querySelectorAll("[data-g]"),function(b){b.onclick=function(){NOLOC=false;go(b.getAttribute("data-g"));};}); drawMap(); return; }
+  var p=chain(CUR), c=document.getElementById("crumb"); c.innerHTML=p.map(function(n,i){return (i?'<span class="sep">›</span>':'')+'<button data-g="'+esc(n)+'"'+(i===p.length-1?' class="cur"':'')+'>'+esc(short(n))+'</button>';}).join("");
+  Array.prototype.forEach.call(c.querySelectorAll("[data-g]"),function(b){b.onclick=function(){go(b.getAttribute("data-g"));};});
+  var L=leaves(CUR), list=MEMBERS.filter(function(m){return L.indexOf(m.leaf)>=0 && (!MUNI_SEL||m.muni===MUNI_SEL);});
+  document.getElementById("mapn").textContent=countIn(CUR)+"명";
+  document.getElementById("tolist").textContent="📋 명단 "+list.length+"명 보기 ↓";
+  document.getElementById("ltitle").textContent=short(CUR)+(CUR==="전국"?"":" 회원")+(MUNI_SEL?" · "+MUNI_SEL:"");
+  document.getElementById("ln").textContent=list.length+" / "+MEMBERS.length;
+  var nm=list.filter(function(m){return m.gender==="남";}).length, nf=list.length-nm;
+  document.getElementById("stat").innerHTML='<div class="k"><b>'+list.length+'</b><span>회원</span></div><div class="k"><b>'+nm+'</b><span>남</span></div><div class="k"><b>'+nf+'</b><span>여</span></div>'+sortChips();
+  var kids=TREE[CUR]?TREE[CUR].kids:[], body=document.getElementById("lbody"), h="";
+  if(MUNI_SEL) h+='<div class="filt">📍 '+esc(MUNI_SEL)+' 회원만 보는 중<button id="unf">전체 보기</button></div>';
+  var REP={"수도권":"경기남부","충청":"충남","전라":"전남","경상":"경북","강원":"강원영서","서울":"서울북부","경기":"경기남부"};
+  var d0=depth(CUR);                                     /* 지역 알약은 지금 보는 단계 아래만 보여준다 */
+  h+=thead();
+  if(!GROUP){                                            /* 지역구분 끔: 한 목록, 알약으로 계층 표시 */
+    var flat=list.slice().sort(cmpM);
+    flat.forEach(function(m){ h+=rowHtml(m,d0,""); });
+    if(!flat.length) h+='<div class="empty">이 지역에 등록된 회원이 없습니다</div>';
+  } else {
+    var units, keyOf;
+    if(kids.length){ units=kids; keyOf=function(m){ var n=m.leaf; while(n && kids.indexOf(n)<0) n=PARENT[n]; return n; }; }
+    else { var seen={}; units=[]; list.forEach(function(m){ var k=m.muni||"시군구 미상"; if(!seen[k]){seen[k]=1;units.push(k);} }); units.sort(function(a,b){return a.localeCompare(b,"ko");}); keyOf=function(m){return m.muni||"시군구 미상";}; }
+    var any=false;
+    units.forEach(function(x){ var a=list.filter(function(m){return keyOf(m)===x;}); if(!a.length) return; any=true;
+      a.sort(cmpM);
+      var gc=kids.length?colorOf(REP[x]||leaves(x)[0]):colorOf(CUR);
+      h+='<div class="gh" style="--gc:'+gc+';--gh:color-mix(in srgb,'+gc+' 38%,var(--card))">📍 '+esc(short(x))+' <b>'+a.length+'</b>'+(kids.length?'<button data-g="'+esc(x)+'">이 지역만 보기 →</button>':'')+'</div>';
+      a.forEach(function(m){ h+=rowHtml(m,kids.length?d0+1:d0,gc); });
+    });
+    if(!any) h+='<div class="empty">이 지역에 등록된 회원이 없습니다</div>';
+  }
+  body.innerHTML=h;
+  var un=document.getElementById("unf"); if(un) un.onclick=function(){MUNI_SEL="";render();};
+  Array.prototype.forEach.call(body.querySelectorAll("[data-g]"),function(b){b.onclick=function(){go(b.getAttribute("data-g"));};});
+  bindSort();
+  drawMap();
+}
+document.getElementById("tolist").onclick=function(){ var l=document.querySelector(".list"); if(l) l.scrollIntoView({behavior:"smooth",block:"start"}); };
+
+/* ───────── 시작: 만료 → (대기) → 비밀번호 → 경계 자료 → 그리기 ───────── */
+var root=document.getElementById("root");
+function screen(html){ var old=document.getElementById("scr"); if(old) old.remove(); var d=document.createElement("div"); d.id="scr"; d.className="center"; d.innerHTML=html; root.insertBefore(d,root.firstChild); }
+function clearScreen(){ var old=document.getElementById("scr"); if(old) old.remove(); }
+function fmtTime(sec){ var d=new Date(sec*1000); return (d.getMonth()+1)+"."+d.getDate()+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2); }
+function b2a(bytes){var s="";for(var i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);return btoa(s);}
+function a2b(b64){var s=atob(b64),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u;}
+function key(pw,salt){return crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]).then(function(k){return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:ITER,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["decrypt"]);});}
+function unseal(obj,pw){return key(pw,a2b(obj.s)).then(function(k){return crypto.subtle.decrypt({name:"AES-GCM",iv:a2b(obj.i)},k,a2b(obj.c));}).then(function(buf){return JSON.parse(new TextDecoder().decode(buf));});}
+function utf8dec(b64){ return JSON.parse(new TextDecoder().decode(a2b(b64))); }
+function start(p){ P=p; try{ var ss=String(localStorage.getItem("kiwi.map.sort")||"").split(":"); if(ss[0]==="name"||ss[0]==="age"||ss[0]==="gender"||ss[0]==="marry"){ SORT=ss[0]; DIR=ss[1]==="-1"?-1:1; } if(localStorage.getItem("kiwi.map.group")==="0") GROUP=false; }catch(e){}
+  document.getElementById("roomname").textContent=P.room||ROOM;
+  screen('<h1>지도를 불러오는 중</h1><p class="hintp"><span class="spin"></span>시군구 경계 자료 (약 300KB)</p>');
+  fetch(GEO_URL+"?v="+PUB,{cache:"force-cache"}).then(function(r){ if(!r.ok) throw new Error("["+r.status+"]"); return r.json(); }).then(function(g){
+    GEO=g; PATHS=g.paths; CENTS=g.cents; MPATHS=g.mpaths; MCENTS=g.mcents; VB=g.vb; VIEW=homeView(); svg.setAttribute("viewBox",[VIEW.x,VIEW.y,VIEW.w,VIEW.h].join(" "));
+    loadMembers(); document.getElementById("pubinfo").textContent="공질 "+ALL.length+"건"+(nOut()?" (퇴장 "+nOut()+" 제외)":"")+" · "+fmtTime(P.pub||PUB)+" 기준 · "+fmtTime(EXP)+" 까지";
+    clearScreen(); app.hidden=false; render(); }).catch(function(e){ screen('<h1>지도 자료를 받지 못했습니다</h1><p class="hintp">'+esc(String(e.message||e))+' · 봇에서 .공질웹점검 으로 kr.json 업로드 상태를 확인해 주세요</p>'); }); }
+function unlockScreen(msg){ screen('<h1>🥝 KIWI 지역보기</h1><p class="hintp">'+esc(ROOM)+'</p><input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password"><button class="btn" id="go">열기</button><p class="hintp" id="msg"'+(msg?' style="color:var(--pin)"':'')+'>'+esc(msg||"비밀번호를 입력하세요")+'</p>');
+  var pw=document.getElementById("pw"),go=document.getElementById("go");
+  function tryOpen(){ var v=pw.value; if(!v) return; go.disabled=true; document.getElementById("msg").textContent="여는 중…"; unseal(PAYLOAD,v).then(start).catch(function(){ unlockScreen("비밀번호가 맞지 않습니다"); }); }
+  go.onclick=tryOpen; pw.onkeydown=function(e){ if(e.key==="Enter") tryOpen(); }; pw.focus(); }
+function readMeta(cb){ fetch("meta.json?_="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(cb,function(){cb(null);}); }
+function waitScreen(v){ screen('<h1>새 페이지를 올리는 중입니다</h1><p class="hintp"><span class="spin"></span>잠시만 기다리면 자동으로 열립니다 <span id="c"></span></p><p class="hintp">보통 30초~1분 걸립니다</p>');
+  var n=0,ready=false;
+  function fail(){ screen('<h1>아직 올라오지 않았습니다</h1><p class="hintp">GitHub 배포가 평소보다 오래 걸리고 있습니다.</p><button class="btn" id="rt">다시 시도</button>'); document.getElementById("rt").onclick=function(){location.reload();}; }
+  function go(){ location.replace(location.pathname+"?v="+v+"&r="+Date.now()); }
+  function checkIndex(){ fetch(location.pathname+"?_="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";}).then(function(t){ var m=/data-kiwi-pub="(\d+)"/.exec(t||""); if(m&&+m[1]>=v) go(); else setTimeout(tick,4000); }).catch(function(){ setTimeout(tick,4000); }); }
+  (function tick(){ n++; var c=document.getElementById("c"); if(c) c.textContent="("+(n*4)+"초)"; if(n>150){ fail(); return; } if(ready){ checkIndex(); return; }
+    readMeta(function(m){ if(m&&(m.pub||0)>=v){ ready=true; checkIndex(); } else setTimeout(tick,4000); }); })(); }
+/* 새 판을 올리는 중이면 (채팅통계처럼) 기존 자료를 먼저 보여주고 위에 안내 띠만 띄운 뒤, 준비되면 새 페이지로 바꾼다 */
+function updatingBanner(v){
+  var d=document.createElement("div"); d.id="upd"; d.style.cssText="position:sticky;top:0;z-index:60;margin:-20px -16px 12px;padding:9px 16px;background:var(--kiwi-l);color:var(--kiwi-d);font-size:12.5px;font-weight:700;text-align:center;border-bottom:1px solid var(--line)";
+  d.innerHTML='<span class="spin"></span>새 자료를 올리는 중입니다 — 지금 보이는 건 '+fmtTime(PUB)+' 자료이고, 준비되면 자동으로 바뀝니다 <span id="updc"></span>';
+  document.body.insertBefore(d,document.body.firstChild);
+  var n=0,ready=false;
+  function go(){ location.replace(location.pathname+"?v="+v+"&r="+Date.now()); }
+  function checkIndex(){ fetch(location.pathname+"?_="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";}).then(function(t){ var m=/data-kiwi-pub="(\d+)"/.exec(t||""); if(m&&+m[1]>=v) go(); else setTimeout(tick,5000); }).catch(function(){ setTimeout(tick,5000); }); }
+  (function tick(){ n++; var c=document.getElementById("updc"); if(c) c.textContent="("+(n*5)+"초)"; if(n>120){ if(c) c.textContent="— 오래 걸리네요. 잠시 뒤 새로고침해 주세요"; return; } if(ready){ checkIndex(); return; }
+    readMeta(function(m){ if(m&&(m.pub||0)>=v){ ready=true; checkIndex(); } else setTimeout(tick,5000); }); })();
+}
+var mv=/[?&]v=(\d+)/.exec(location.search), want=mv?+mv[1]:0, nowS=Date.now()/1000;
+if(want>PUB && nowS<=EXP && PLAIN){ updatingBanner(want); start(utf8dec(PAYLOAD)); }
+else if(want>PUB) waitScreen(want);
+else if(nowS>EXP){ screen('<h1>만료된 페이지입니다</h1><p class="hintp">방에서 .지역보기 를 다시 입력해 새 링크를 받아주세요.</p>'); readMeta(function(m){ if(m&&m.pub>PUB&&m.exp>nowS) waitScreen(m.pub); }); }
+else if(PLAIN) start(utf8dec(PAYLOAD));
+else if(!window.crypto||!crypto.subtle) screen('<h1>이 브라우저에서는 열 수 없습니다</h1><p class="hintp">Chrome · Safari 로 열어주세요</p>');
+else unlockScreen("");
+})();
+</script>
+</body>
+</html>
